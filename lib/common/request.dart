@@ -10,6 +10,7 @@ import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/state.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
 class Request {
   late final Dio dio;
@@ -145,6 +146,7 @@ class Request {
   }
 
   Future<bool> pingHelper() async {
+    if (kDebugMode) return true;
     try {
       final response = await dio
           .get(
