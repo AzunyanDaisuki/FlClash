@@ -106,10 +106,9 @@ Future<int> _package(
 
   final coreSha256 = platform == 'windows' ? await _buildGoCore(rootDir) : null;
 
-  // Write env.json for Flutter --dart-define-from-file (APP_ENV)
-  await File(
-    p.join(rootDir, 'env.json'),
-  ).writeAsString(jsonEncode({'APP_ENV': env}));
+  final file = File(p.join(rootDir, 'env.json'));
+  await file.create(recursive: true);
+  await file.writeAsString(jsonEncode({'APP_ENV': env}));
 
   final flutterBuildArgs = ['dart-define-from-file=env.json'];
   if (coreSha256 != null) {
@@ -135,7 +134,8 @@ Future<int> _package(
     '--targets',
     targets,
     ...descriptionArgs,
-    for (final arg in flutterBuildArgs) '--flutter-build-args=$arg',
+    if (flutterBuildArgs.isNotEmpty)
+      ' --flutter-build-args=${flutterBuildArgs.join(',')}',
   ], includeParentEnvironment: true);
 
   final stdoutDone = process.stdout.pipe(stdout);
@@ -146,16 +146,26 @@ Future<int> _package(
 }
 
 Future<String?> _buildGoCore(String rootDir) async {
-  final buildToolDir = p.join(rootDir, 'plugins', 'setup', 'buildkit', 'build_tool');
-  final result = await Process.run('dart', ['run', 'build_tool', 'windows'],
-      workingDirectory: buildToolDir);
+  final buildToolDir = p.join(
+    rootDir,
+    'plugins',
+    'setup',
+    'buildkit',
+    'build_tool',
+  );
+  final result = await Process.run('dart', [
+    'run',
+    'build_tool',
+    'windows',
+  ], workingDirectory: buildToolDir);
   if (result.exitCode != 0) {
     stderr.write(result.stderr);
     return null;
   }
   final shaFile = File(p.join(rootDir, 'core_sha256.json'));
   if (!shaFile.existsSync()) return null;
-  final content = jsonDecode(shaFile.readAsStringSync()) as Map<String, dynamic>;
+  final content =
+      jsonDecode(shaFile.readAsStringSync()) as Map<String, dynamic>;
   return content['CORE_SHA256'] as String?;
 }
 
