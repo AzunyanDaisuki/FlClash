@@ -14,6 +14,12 @@ if "%PROJECT_DIR%"=="..\" (
 goto :find_root
 
 :found
+set "DEV_MODE=0"
+for %%a in (%*) do if "%%a"=="--dev" set "DEV_MODE=1"
+if "%DEV_MODE%"=="1" (
+    taskkill /F /IM FlClashHelperService.exe >nul 2>&1
+)
+
 set "BUILD_TOOL_DIR=%SCRIPT_DIR%build_tool"
 
 if not defined DART_SDK (
