@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:animations/animations.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:fl_clash/common/theme.dart';
+import 'package:fl_clash/plugins/app.dart';
 import 'package:fl_clash/widgets/dialog.dart';
 import 'package:fl_clash/widgets/list.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:material_color_utilities/palettes/core_palette.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wifi_ssid/wifi_ssid_manager.dart';
 
 import 'common/common.dart';
 import 'database/database.dart';
@@ -327,26 +329,26 @@ class GlobalState {
   }
 
   void checkTaskPermissions() {
-    // debouncer.call('checkTaskPermissions', () async {
-    //   if (!(system.isAndroid || system.isMacOS)) {
-    //     return;
-    //   }
-    //   container.read(batteryOptimizationDisableProvider.notifier).value =
-    //       await app?.isBatteryOptimizationDisabled() ?? true;
-    //   final res = await WifiSsidManager.instance.checkPermission();
-    //   container.read(locationPermissionsProvider.notifier).value = res;
-    //   final needRequestPermission = container.read(
-    //     excludeSSIDsProvider.select((state) => state.isNotEmpty),
-    //   );
-    //   if (res == WifiSsidPermission.denied && needRequestPermission) {
-    //     final res = await WifiSsidManager.instance.requestPermission();
-    //     container.read(locationPermissionsProvider.notifier).value = res;
-    //     if (res != WifiSsidPermission.granted) {
-    //       final ssid = await WifiSsidManager.instance.getSsid();
-    //       container.read(currentSSIDProvider.notifier).value = ssid;
-    //     }
-    //   }
-    // }, duration: commonDuration);
+    debouncer.call('checkTaskPermissions', () async {
+      if (!(system.isAndroid || system.isMacOS)) {
+        return;
+      }
+      container.read(batteryOptimizationDisableProvider.notifier).value =
+          await app?.isBatteryOptimizationDisabled() ?? true;
+      final res = await WifiSsidManager.instance.checkPermission();
+      container.read(locationPermissionsProvider.notifier).value = res;
+      final needRequestPermission = container.read(
+        excludeSSIDsProvider.select((state) => state.isNotEmpty),
+      );
+      if (res == WifiSsidPermission.denied && needRequestPermission) {
+        final res = await WifiSsidManager.instance.requestPermission();
+        container.read(locationPermissionsProvider.notifier).value = res;
+        if (res != WifiSsidPermission.granted) {
+          final ssid = await WifiSsidManager.instance.getSsid();
+          container.read(currentSSIDProvider.notifier).value = ssid;
+        }
+      }
+    }, duration: commonDuration);
   }
 
   Future<void> _handleFailedPreference() async {

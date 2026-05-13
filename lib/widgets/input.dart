@@ -167,8 +167,13 @@ class _InputDialogState extends State<InputDialog> {
             onPressed: _handleReset,
             child: Text(appLocalizations.reset),
           ),
-          const SizedBox(width: 4),
-        ],
+        ] else
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(appLocalizations.cancel),
+          ),
         TextButton(
           onPressed: _handleUpdate,
           child: Text(appLocalizations.submit),

@@ -1,6 +1,7 @@
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/plugins/app.dart';
 import 'package:fl_clash/providers/app.dart';
+import 'package:fl_clash/providers/config.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -31,8 +32,7 @@ class _OnDemandViewState extends ConsumerState<OnDemandView> {
             text: appLocalizations.locationPermissionGuide(appName),
           ),
         );
-      }
-      if (system.isAndroid) {
+      } else if (system.isAndroid) {
         app?.openAppSettings();
       }
     } else {
@@ -43,6 +43,32 @@ class _OnDemandViewState extends ConsumerState<OnDemandView> {
 
   void _handleOpenBatteryOptimizationSettings() {
     app?.openBatteryOptimizationSettings();
+  }
+
+  Future<void> _handleAddOrUpdate([String? ssid]) async {
+    final ssids = ref.read(excludeSSIDsProvider);
+    final appLocalizations = context.appLocalizations;
+    final newSSID = await globalState.showCommonDialog<String>(
+      child: InputDialog(
+        title: '请输入SSID',
+        value: '',
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return appLocalizations.emptyTip('SSID').trim();
+          }
+          if (ssids.contains(value) && ssid != value) {
+            return appLocalizations.existsTip('SSID').trim();
+          }
+          return null;
+        },
+      ),
+    );
+    if (newSSID == null || ssid == newSSID) {
+      return;
+    }
+    globalState.container
+        .read(excludeSSIDsProvider.notifier)
+        .update((state) => [...state, newSSID]);
   }
 
   @override
@@ -118,7 +144,7 @@ class _OnDemandViewState extends ConsumerState<OnDemandView> {
                 actions: [
                   CommonMinFilledButtonTheme(
                     child: FilledButton.tonal(
-                      onPressed: () {},
+                      onPressed: _handleAddOrUpdate,
                       child: Text(appLocalizations.add),
                     ),
                   ),
