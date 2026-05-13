@@ -43,6 +43,7 @@ class CustomContent extends ConsumerWidget {
     final profileId = ProfileIdProvider.of(context)!.profileId;
     ref.listen(proxyGroupsProvider(profileId), (_, _) {});
     ref.listen(profileCustomRulesProvider(profileId), (_, _) {});
+    ref.listen(customOverwriteDateProvider(profileId), (_, _) {});
     final proxyGroupNum =
         ref.watch(proxyGroupsCountProvider(profileId)).value ?? -1;
     final ruleNum = ref.watch(customRulesCountProvider(profileId)).value ?? -1;

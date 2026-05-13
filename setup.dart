@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 
 const _allTargets = <String, String>{
   'android': 'apk',
-  'linux': 'deb',  // appimage + rpm added for amd64 only
+  'linux': 'deb', // appimage + rpm added for amd64 only
   'macos': 'dmg',
   'windows': 'exe,zip',
 };
@@ -165,9 +165,7 @@ Future<int> _package(
       ...descriptionArgs,
     ],
     includeParentEnvironment: true,
-    environment: {
-      if (androidArch != null) 'ANDROID_ARCH': androidArch,
-    },
+    environment: {'ANDROID_ARCH': ?androidArch},
     runInShell: Platform.isWindows,
   );
 

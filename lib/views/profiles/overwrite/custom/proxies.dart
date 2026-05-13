@@ -409,6 +409,11 @@ class _AddProxiesViewState extends ConsumerState<_AddProxiesView>
     final appLocalizations = context.appLocalizations;
     final isBottomSheet =
         SheetProvider.of(context)?.type == SheetType.bottomSheet;
+    final height = ref.watch(
+      viewSizeProvider.select(
+        (state) => isBottomSheet ? state.height * 0.8 : double.maxFinite,
+      ),
+    );
     final profileId = ProfileIdProvider.of(context)!.profileId;
     final dismissGroups = ref.watch(itemsProvider('${key}_groups'));
     final dismissProxies = ref.watch(itemsProvider('${key}_proxies'));
@@ -439,11 +444,6 @@ class _AddProxiesViewState extends ConsumerState<_AddProxiesView>
         .toList();
     final groupNames = proxyGroups.map((item) => item.name).toList();
     final proxyNames = proxies.map((item) => item.name).toList();
-    final height = ref.watch(
-      viewSizeProvider.select(
-        (state) => isBottomSheet ? state.height * 0.8 : double.maxFinite,
-      ),
-    );
     return SizedBox(
       height: height,
       child: AdaptiveSheetScaffold(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:animations/animations.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
@@ -363,6 +364,9 @@ class _AddOrEditProxyGroupNestedSheetState
       },
     );
     final sheetProvider = SheetProvider.of(context);
+    final fillColor = sheetProvider?.type == SheetType.bottomSheet
+        ? context.colorScheme.surfaceContainerLow
+        : context.colorScheme.surface;
     return CommonPopScope(
       onPop: (_) async {
         _handlePop();
@@ -384,19 +388,36 @@ class _AddOrEditProxyGroupNestedSheetState
             SizedBox(
               width: sheetProvider.type == SheetType.sideSheet ? 400 : null,
               child: SheetViewport(
-                child: PagedSheet(
-                  decoration: MaterialSheetDecoration(
-                    animationDuration: Duration.zero,
-                    size: SheetSize.stretch,
-                    color: sheetProvider.type == SheetType.bottomSheet
-                        ? context.colorScheme.surfaceContainerLow
-                        : context.colorScheme.surface,
-                    borderRadius: sheetProvider.type == SheetType.bottomSheet
-                        ? const BorderRadius.vertical(top: Radius.circular(28))
-                        : BorderRadius.zero,
-                    clipBehavior: Clip.antiAlias,
+                child: PagedSheetRouteTheme(
+                  data: PagedSheetRouteThemeData(
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                          return SharedAxisPageTransitionsBuilder(
+                            transitionType: SharedAxisTransitionType.horizontal,
+                            fillColor: fillColor,
+                          ).buildTransitions(
+                            ModalRoute.of(context) as PageRoute,
+                            context,
+                            animation,
+                            secondaryAnimation,
+                            child,
+                          );
+                        },
                   ),
-                  navigator: nestedNavigator,
+                  child: PagedSheet(
+                    decoration: MaterialSheetDecoration(
+                      animationDuration: Duration.zero,
+                      size: SheetSize.stretch,
+                      color: fillColor,
+                      borderRadius: sheetProvider.type == SheetType.bottomSheet
+                          ? const BorderRadius.vertical(
+                              top: Radius.circular(28),
+                            )
+                          : BorderRadius.zero,
+                      clipBehavior: Clip.antiAlias,
+                    ),
+                    navigator: nestedNavigator,
+                  ),
                 ),
               ),
             ),
