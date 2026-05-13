@@ -39,7 +39,7 @@ Future<void> main(List<String> args) async {
   final results = parser.parse(args);
   final rest = results.rest;
 
-  final hostOs = Platform.operatingSystem; // linux, macos, windows
+  final hostOs = Platform.operatingSystem;
   final host = _hostPlatform[hostOs];
   if (host == null) {
     stderr.writeln('Unsupported host platform: $hostOs');
@@ -48,7 +48,6 @@ Future<void> main(List<String> args) async {
 
   final platform = rest.isNotEmpty ? rest.first : host;
 
-  // Only allow current host platform or android
   if (platform != host && platform != 'android') {
     stderr.writeln(
       'Cannot build "$platform" on $hostOs. Allowed: $host, android',
@@ -101,7 +100,6 @@ Future<int> _package(
     return activateResult.exitCode;
   }
 
-  // Auto-detect host arch (used for deps, description, etc.)
   final arch = _detectArch();
 
   final coreSha256 = platform == 'windows' ? await _buildGoCore(rootDir) : null;
@@ -122,7 +120,6 @@ Future<int> _package(
     descriptionArgs.addAll(['--description', arch]);
   }
 
-  // Install platform build dependencies (skips if already present)
   final depExit = await _ensureDependencies(platform, arch);
   if (depExit != 0) return depExit;
 
@@ -133,9 +130,9 @@ Future<int> _package(
     platform,
     '--targets',
     targets,
-    ...descriptionArgs,
     if (flutterBuildArgs.isNotEmpty)
-      ' --flutter-build-args=${flutterBuildArgs.join(',')}',
+      '--flutter-build-args=${flutterBuildArgs.join(',')}',
+    ...descriptionArgs,
   ], includeParentEnvironment: true);
 
   final stdoutDone = process.stdout.pipe(stdout);
@@ -186,7 +183,6 @@ Future<bool> _hasCommand(String cmd) async {
   return result.exitCode == 0;
 }
 
-/// Install platform-specific build dependencies, skipping if already present.
 Future<int> _ensureDependencies(String platform, String arch) async {
   switch (platform) {
     case 'macos':
@@ -223,7 +219,6 @@ Future<int> _ensureLinuxDependencies(String arch) async {
     pkgs.addAll(['rpm', 'patchelf', 'libfuse2']);
   }
 
-  // Check which packages are already installed
   final missingPkgs = <String>[];
   for (final pkg in pkgs) {
     final result = await Process.run('dpkg', ['-s', pkg]);
@@ -251,7 +246,6 @@ Future<int> _ensureLinuxDependencies(String arch) async {
     if (exitCode != 0) return exitCode;
   }
 
-  // AppImage tool (amd64 only)
   if (arch == 'amd64') {
     const appimagetool = '/usr/local/bin/appimagetool';
     if (File(appimagetool).existsSync()) {
