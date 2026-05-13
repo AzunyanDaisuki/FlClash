@@ -421,27 +421,35 @@ class _AddProxiesViewState extends ConsumerState<_AddProxiesView>
     final excludeProxyNames = ref
         .watch(
           proxyGroupProvider.select((state) {
-            return VM([...?state.proxies, state.name]);
+            return VM(<String>{...?state.proxies, state.name});
           }),
         )
         .a;
     final vm2 = ref.watch(
       customOverwriteDateProvider(profileId).select((state) {
-        return VM2(
-          state.proxies
-              .where((item) => !excludeProxyNames.contains(item.name))
-              .toList(),
-          state.proxyGroups
-              .where((item) => !excludeProxyNames.contains(item.name))
-              .toList(),
-        );
+        final filteredProxies = <Proxy>[];
+        final filteredGroups = <ProxyGroup>[];
+        for (final item in state.proxies) {
+          if (!excludeProxyNames.contains(item.name)) {
+            filteredProxies.add(item);
+          }
+        }
+        for (final item in state.proxyGroups) {
+          if (!excludeProxyNames.contains(item.name)) {
+            filteredGroups.add(item);
+          }
+        }
+        return VM2(filteredProxies, filteredGroups);
       }),
     );
     final proxies = vm2.a;
     final proxyGroups = vm2.b;
-    final targets = RuleTarget.baseTargets
-        .where((item) => !excludeProxyNames.contains(item))
-        .toList();
+    final targets = <String>[];
+    for (final item in RuleTarget.baseTargets) {
+      if (!excludeProxyNames.contains(item)) {
+        targets.add(item);
+      }
+    }
     final groupNames = proxyGroups.map((item) => item.name).toList();
     final proxyNames = proxies.map((item) => item.name).toList();
     return SizedBox(
