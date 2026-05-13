@@ -132,7 +132,7 @@ Future<int> _package(
     if (flutterBuildArgs.isNotEmpty)
       '--flutter-build-args=${flutterBuildArgs.join(',')}',
     ...descriptionArgs,
-  ], includeParentEnvironment: true);
+  ], includeParentEnvironment: true, runInShell: Platform.isWindows);
 
   final stdoutDone = process.stdout.pipe(stdout);
   final stderrDone = process.stderr.pipe(stderr);
@@ -153,6 +153,7 @@ Future<String?> _buildGoCore(String rootDir) async {
     'run',
     'build_tool',
     'windows',
+    '--root-dir', rootDir,
   ], workingDirectory: buildToolDir);
   if (result.exitCode != 0) {
     stderr.write(result.stderr);

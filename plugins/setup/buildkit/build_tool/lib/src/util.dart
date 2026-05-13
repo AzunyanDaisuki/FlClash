@@ -58,6 +58,7 @@ Future<void> runCommandStream(
     workingDirectory: workingDirectory,
     environment: environment,
     includeParentEnvironment: true,
+    runInShell: Platform.isWindows,
   );
   process.stdout.transform(utf8.decoder).listen((data) {
     for (final line in data.split('\n')) {
