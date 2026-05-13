@@ -110,7 +110,7 @@ Future<int> _package(
     jsonEncode({'APP_ENV': env, 'CORE_SHA256': ?coreSha256}),
   );
 
-  final flutterBuildArgs = [''];
+  final flutterBuildArgs = <String>['dart-define-from-file=env.json'];
   if (platform == 'android') {
     flutterBuildArgs.add('split-per-abi');
   }
@@ -122,17 +122,22 @@ Future<int> _package(
   final depExit = await _ensureDependencies(platform, arch);
   if (depExit != 0) return depExit;
 
-  final process = await Process.start('flutter_distributor', [
-    'package',
-    '--skip-clean',
-    '--platform',
-    platform,
-    '--targets',
-    targets,
-    if (flutterBuildArgs.isNotEmpty)
-      '--flutter-build-args=${flutterBuildArgs.join(',')}',
-    ...descriptionArgs,
-  ], includeParentEnvironment: true, runInShell: Platform.isWindows);
+  final process = await Process.start(
+    'flutter_distributor',
+    [
+      'package',
+      '--skip-clean',
+      '--platform',
+      platform,
+      '--targets',
+      targets,
+      if (flutterBuildArgs.isNotEmpty)
+        '--flutter-build-args=${flutterBuildArgs.join(',')}',
+      ...descriptionArgs,
+    ],
+    includeParentEnvironment: true,
+    runInShell: Platform.isWindows,
+  );
 
   final stdoutDone = process.stdout.pipe(stdout);
   final stderrDone = process.stderr.pipe(stderr);
@@ -153,7 +158,8 @@ Future<String?> _buildGoCore(String rootDir) async {
     'run',
     'build_tool',
     'windows',
-    '--root-dir', rootDir,
+    '--root-dir',
+    rootDir,
   ], workingDirectory: buildToolDir);
   if (result.exitCode != 0) {
     stderr.write(result.stderr);
