@@ -15,30 +15,29 @@ class OnDemandView extends ConsumerStatefulWidget {
 }
 
 class _OnDemandViewState extends ConsumerState<OnDemandView> {
-  void _handleRequestLocationPermission() {
+  Future<void> _handleRequestLocationPermission() async {
     final permission = ref.read(locationPermissionsProvider);
     if (permission == WifiSsidPermission.granted) {
-      if (system.isAndroid) {
-        app?.openAppSettings();
-      }
       return;
     }
     if (permission == WifiSsidPermission.permanentlyDenied) {
       if (system.isMacOS) {
-        final macAppLocalizations = context.appLocalizations;
+        final appLocalizations = context.appLocalizations;
         globalState.showMessage(
-          title: macAppLocalizations.locationPermissionRequired,
+          title: appLocalizations.locationPermissionRequired,
           cancelable: false,
           message: TextSpan(
             style: context.textTheme.bodyMedium,
-            text: macAppLocalizations.locationPermissionGuide(appName),
+            text: appLocalizations.locationPermissionGuide(appName),
           ),
         );
       }
       if (system.isAndroid) {
         app?.openAppSettings();
       }
-      return;
+    } else {
+      globalState.container.read(locationPermissionsProvider.notifier).value =
+          await wifiSsidManager.requestPermission();
     }
   }
 
@@ -52,7 +51,11 @@ class _OnDemandViewState extends ConsumerState<OnDemandView> {
     final batteryOptimizationDisable = ref.watch(
       batteryOptimizationDisableProvider,
     );
-    final locationPermissions = ref.watch(locationPermissionsProvider);
+    final locationPermissionsGranted = ref.watch(
+      locationPermissionsProvider.select(
+        (state) => state == WifiSsidPermission.granted,
+      ),
+    );
     return CommonScaffold(
       body: CustomScrollView(
         slivers: [
@@ -64,29 +67,42 @@ class _OnDemandViewState extends ConsumerState<OnDemandView> {
                 items: [
                   if (system.isAndroid)
                     DecorationListItem(
-                      onPressed: _handleOpenBatteryOptimizationSettings,
                       minVerticalPadding: 8,
                       title: Text(appLocalizations.ignoreBatteryOptimization),
                       subtitle: Text(appLocalizations.batteryOptimizationDesc),
-                      trailing: Switch(
-                        value: batteryOptimizationDisable,
-                        onChanged: (_) {
-                          _handleOpenBatteryOptimizationSettings();
-                        },
+                      trailing: CommonMinFilledButtonTheme(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: batteryOptimizationDisable
+                                ? null
+                                : context.colorScheme.error,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          onPressed: _handleOpenBatteryOptimizationSettings,
+                          child: Text(
+                            batteryOptimizationDisable ? '已授权' : '点击授权',
+                          ),
+                        ),
                       ),
                     ),
                   if (system.isAndroid || system.isMacOS)
                     DecorationListItem(
-                      onPressed: _handleRequestLocationPermission,
                       minVerticalPadding: 8,
                       title: Text(appLocalizations.locationPermission),
                       subtitle: Text(appLocalizations.locationPermissionDesc),
-                      trailing: Switch(
-                        value:
-                            locationPermissions == WifiSsidPermission.granted,
-                        onChanged: (_) {
-                          _handleRequestLocationPermission();
-                        },
+                      trailing: CommonMinFilledButtonTheme(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: locationPermissionsGranted
+                                ? null
+                                : context.colorScheme.error,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          onPressed: _handleRequestLocationPermission,
+                          child: Text(
+                            locationPermissionsGranted ? '已授权' : '点击授权',
+                          ),
+                        ),
                       ),
                     ),
                 ],

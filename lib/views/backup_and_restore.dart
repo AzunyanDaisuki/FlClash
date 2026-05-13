@@ -252,7 +252,7 @@ class _BackupAndRestoreState extends ConsumerState<BackupAndRestore>
                                 : Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: isCompleter
+                                      color: !isCompleter
                                           ? context.colorScheme.error
                                           : Colors.green.harmonizeWith(
                                               context.colorScheme.primary,

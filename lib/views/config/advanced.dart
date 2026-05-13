@@ -4,6 +4,7 @@ import 'package:fl_clash/providers/config.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/views/config/dns.dart';
 import 'package:fl_clash/views/config/network.dart';
+import 'package:fl_clash/views/config/on_demand.dart';
 import 'package:fl_clash/views/config/scripts.dart';
 import 'package:fl_clash/widgets/list.dart';
 import 'package:fl_clash/widgets/scaffold.dart';
@@ -31,12 +32,12 @@ class AdvancedConfigView extends StatelessWidget {
           ),
         ),
       ),
-      // ListItem.open(
-      //   title: Text(appLocalizations.onDemand),
-      //   subtitle: Text(appLocalizations.onDemandDesc),
-      //   leading: const Icon(Icons.ssid_chart, fontWeight: FontWeight.w900),
-      //   delegate: const OpenDelegate(widget: RunView(), blur: false),
-      // ),
+      ListItem.open(
+        title: Text(appLocalizations.onDemand),
+        subtitle: Text(appLocalizations.onDemandDesc),
+        leading: const Icon(Icons.ssid_chart, fontWeight: FontWeight.w900),
+        delegate: const OpenDelegate(widget: OnDemandView(), blur: false),
+      ),
       ListItem.open(
         title: const Text('DNS'),
         subtitle: Text(appLocalizations.dnsDesc),
