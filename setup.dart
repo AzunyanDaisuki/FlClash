@@ -11,6 +11,12 @@ const _allTargets = <String, String>{
   'windows': 'exe,zip',
 };
 
+const _androidFlutterTarget = {
+  'arm': 'android-arm',
+  'arm64': 'android-arm64',
+  'amd64': 'android-x64',
+};
+
 const _hostPlatform = {
   'linux': 'linux',
   'macos': 'macos',
@@ -29,6 +35,12 @@ Future<void> main(List<String> args) async {
       'targets',
       valueHelp: 'exe,zip,dmg,apk,...',
       help: 'Package targets (default: all for platform)',
+    )
+    ..addOption(
+      'arch',
+      valueHelp: 'arm,arm64,amd64',
+      allowed: ['arm', 'arm64', 'amd64'],
+      help: 'Target architecture (Android only)',
     );
 
   if (args.contains('--help') || args.contains('-h')) {
@@ -60,8 +72,16 @@ Future<void> main(List<String> args) async {
   final rootDir = Directory.current.path;
   final arch = _detectArch();
   final targets = _getTargets(platform, arch, results['targets']);
+  final androidArch = results['arch'] as String?;
 
-  final exitCode = await _package(platform, env, targets, rootDir, arch);
+  final exitCode = await _package(
+    platform,
+    env,
+    targets,
+    rootDir,
+    arch,
+    androidArch: androidArch,
+  );
   exit(exitCode);
 }
 
@@ -86,8 +106,9 @@ Future<int> _package(
   String env,
   String targets,
   String rootDir,
-  String arch,
-) async {
+  String arch, {
+  String? androidArch,
+}) async {
   final distributorDir = p.join(
     rootDir,
     'plugins',
@@ -137,11 +158,16 @@ Future<int> _package(
       platform,
       '--targets',
       targets,
+      if (androidArch != null)
+        '--build-target-platform=${_androidFlutterTarget[androidArch]!}',
       if (flutterBuildArgs.isNotEmpty)
         '--flutter-build-args=${flutterBuildArgs.join(',')}',
       ...descriptionArgs,
     ],
     includeParentEnvironment: true,
+    environment: {
+      if (androidArch != null) 'ANDROID_ARCH': androidArch,
+    },
     runInShell: Platform.isWindows,
   );
 
