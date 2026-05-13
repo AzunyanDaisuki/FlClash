@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 
 const _allTargets = <String, String>{
   'android': 'apk',
-  'linux': 'deb,appimage,rpm',
+  'linux': 'deb',  // appimage + rpm added for amd64 only
   'macos': 'dmg',
   'windows': 'exe,zip',
 };
@@ -57,11 +57,18 @@ Future<void> main(List<String> args) async {
   }
 
   final env = results['env'] as String;
-  final targets = results['targets'] as String? ?? _allTargets[platform]!;
   final rootDir = Directory.current.path;
+  final arch = _detectArch();
+  final targets = _getTargets(platform, arch, results['targets']);
 
-  final exitCode = await _package(platform, env, targets, rootDir);
+  final exitCode = await _package(platform, env, targets, rootDir, arch);
   exit(exitCode);
+}
+
+String _getTargets(String platform, String arch, String? customTargets) {
+  if (customTargets != null) return customTargets;
+  if (platform == 'linux' && arch == 'amd64') return 'deb,appimage,rpm';
+  return _allTargets[platform]!;
 }
 
 void _showHelp(ArgParser parser) {
@@ -79,6 +86,7 @@ Future<int> _package(
   String env,
   String targets,
   String rootDir,
+  String arch,
 ) async {
   final distributorDir = p.join(
     rootDir,
@@ -99,8 +107,6 @@ Future<int> _package(
     stderr.write(activateResult.stderr);
     return activateResult.exitCode;
   }
-
-  final arch = _detectArch();
 
   final coreSha256 = platform == 'windows' ? await _buildGoCore(rootDir) : null;
 
@@ -179,7 +185,9 @@ String _detectArch() {
   }
   final result = Process.runSync('uname', ['-m']);
   final machine = (result.stdout as String).trim();
-  return machine == 'aarch64' ? 'arm64' : machine;
+  if (machine == 'aarch64') return 'arm64';
+  if (machine == 'x86_64') return 'amd64';
+  return machine;
 }
 
 Future<bool> _hasCommand(String cmd) async {
