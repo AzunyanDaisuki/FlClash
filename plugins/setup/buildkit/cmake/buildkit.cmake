@@ -5,10 +5,10 @@
 #
 # This adds a custom command that runs build_tool before the native target is linked.
 
-function(apply_buildkit)
-  # Locate the run_build_tool script relative to this cmake file
-  get_filename_component(BUILDKIT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
+# Resolve at include-time so CMAKE_CURRENT_LIST_DIR is this file's directory
+get_filename_component(BUILDKIT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
 
+function(apply_buildkit)
   if(WIN32)
     set(_launcher "${BUILDKIT_DIR}/run_build_tool.cmd")
   else()
