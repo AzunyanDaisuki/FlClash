@@ -105,13 +105,12 @@ Future<int> _package(
   final coreSha256 = platform == 'windows' ? await _buildGoCore(rootDir) : null;
 
   final file = File(p.join(rootDir, 'env.json'));
-  await file.create(recursive: true);
-  await file.writeAsString(jsonEncode({'APP_ENV': env}));
 
-  final flutterBuildArgs = ['dart-define-from-file=env.json'];
-  if (coreSha256 != null) {
-    flutterBuildArgs.add('dart-define=CORE_SHA256=$coreSha256');
-  }
+  await file.writeAsString(
+    jsonEncode({'APP_ENV': env, 'CORE_SHA256': ?coreSha256}),
+  );
+
+  final flutterBuildArgs = [''];
   if (platform == 'android') {
     flutterBuildArgs.add('split-per-abi');
   }
