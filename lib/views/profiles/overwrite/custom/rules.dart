@@ -355,6 +355,7 @@ class _AddOrEditRuleNestedSheetState
               child: SheetViewport(
                 child: PagedSheet(
                   decoration: MaterialSheetDecoration(
+                    animationDuration: Duration.zero,
                     size: SheetSize.stretch,
                     color: sheetProvider.type == SheetType.bottomSheet
                         ? context.colorScheme.surfaceContainerLow
@@ -417,9 +418,9 @@ class _AddOrEditRuleViewState extends ConsumerState<_AddOrEditRuleView> {
   }
 
   Future<void> _handleSelectedType() async {
-    final res = await Navigator.of(
-      context,
-    ).push(PagedSheetRoute(builder: (context) => const _RuleTypeSelectedView()));
+    final res = await Navigator.of(context).push(
+      PagedSheetRoute(builder: (context) => const _RuleTypeSelectedView()),
+    );
     if (res == null) {
       return;
     }
@@ -472,9 +473,9 @@ class _AddOrEditRuleViewState extends ConsumerState<_AddOrEditRuleView> {
   }
 
   Future<void> _handleSelectedRuleProvider() async {
-    final res = await Navigator.of(
-      context,
-    ).push(PagedSheetRoute(builder: (context) => const _RuleProviderSelectedView()));
+    final res = await Navigator.of(context).push(
+      PagedSheetRoute(builder: (context) => const _RuleProviderSelectedView()),
+    );
     if (res == null) {
       return;
     }
@@ -509,9 +510,9 @@ class _AddOrEditRuleViewState extends ConsumerState<_AddOrEditRuleView> {
   }
 
   Future<void> _handleSelectedTarget() async {
-    final res = await Navigator.of(
-      context,
-    ).push(PagedSheetRoute(builder: (context) => const _RuleTargetSelectedView()));
+    final res = await Navigator.of(context).push(
+      PagedSheetRoute(builder: (context) => const _RuleTargetSelectedView()),
+    );
     if (res == null) {
       return;
     }

@@ -81,8 +81,11 @@ class _CustomProxyGroupsViewState extends ConsumerState<CustomProxyGroupsView> {
           child: ProviderScope(
             overrides: [
               proxyGroupProvider.overrideWithBuild(
-                (_, _) =>
-                    const ProxyGroup(id: -1, name: '', type: GroupType.Selector),
+                (_, _) => const ProxyGroup(
+                  id: -1,
+                  name: '',
+                  type: GroupType.Selector,
+                ),
               ),
             ],
             child: const AddOrEditProxyGroupNestedSheet(),
@@ -383,6 +386,7 @@ class _AddOrEditProxyGroupNestedSheetState
               child: SheetViewport(
                 child: PagedSheet(
                   decoration: MaterialSheetDecoration(
+                    animationDuration: Duration.zero,
                     size: SheetSize.stretch,
                     color: sheetProvider.type == SheetType.bottomSheet
                         ? context.colorScheme.surfaceContainerLow
@@ -480,9 +484,9 @@ class _EditProxyGroupViewState extends ConsumerState<_EditProxyGroupView> {
   }
 
   void _handleToProvidersView() {
-    Navigator.of(
-      context,
-    ).push(PagedSheetRoute(builder: (context) => const EditProxyProvidersView()));
+    Navigator.of(context).push(
+      PagedSheetRoute(builder: (context) => const EditProxyProvidersView()),
+    );
   }
 
   Widget _buildProvidersItem(bool includeAllProviders, List<String> use) {
