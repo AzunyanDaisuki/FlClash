@@ -63,12 +63,28 @@ jobs:
 
       - name: Setup Android Signing
         if: startsWith(matrix.platform,'android')
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE }}
+          SERVICE_JSON_B64: ${{ secrets.SERVICE_JSON }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.KEYSTORE }}" | base64 --decode > android/app/keystore.jks
-          echo "${{ secrets.SERVICE_JSON }}" | base64 --decode > android/app/google-services.json
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/local.properties
-          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/local.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/local.properties
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/keystore.jks
+          fi
+          if [ -n "$SERVICE_JSON_B64" ]; then
+            printf '%s' "$SERVICE_JSON_B64" | base64 --decode > android/app/google-services.json
+          fi
+          if [ -n "$KEY_ALIAS" ]; then
+            echo "keyAlias=$KEY_ALIAS" >> android/local.properties
+          fi
+          if [ -n "$STORE_PASSWORD" ]; then
+            echo "storePassword=$STORE_PASSWORD" >> android/local.properties
+          fi
+          if [ -n "$KEY_PASSWORD" ]; then
+            echo "keyPassword=$KEY_PASSWORD" >> android/local.properties
+          fi
 
       - name: Setup Android SDK
         if: matrix.platform == 'android'
