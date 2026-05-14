@@ -200,7 +200,7 @@ Future<String?> _buildGoCore(String rootDir) async {
   final exitCode = await process.exitCode;
   await Future.wait([stdoutDone, stderrDone]);
   if (exitCode != 0) {
-    return null;
+    return _readWindowsCoreSha256(rootDir);
   }
   return _readWindowsCoreSha256(rootDir);
 }
