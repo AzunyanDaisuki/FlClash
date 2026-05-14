@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
 const _allTargets = <String, String>{
@@ -201,11 +202,26 @@ Future<String?> _buildGoCore(String rootDir) async {
   if (exitCode != 0) {
     return null;
   }
+  return _readWindowsCoreSha256(rootDir);
+}
+
+Future<String?> _readWindowsCoreSha256(String rootDir) async {
   final shaFile = File(p.join(rootDir, 'core_sha256.json'));
-  if (!shaFile.existsSync()) return null;
-  final content =
-      jsonDecode(shaFile.readAsStringSync()) as Map<String, dynamic>;
-  return content['CORE_SHA256'] as String?;
+  if (shaFile.existsSync()) {
+    final content =
+        jsonDecode(shaFile.readAsStringSync()) as Map<String, dynamic>;
+    final sha = content['CORE_SHA256'] as String?;
+    if (sha != null && sha.isNotEmpty) return sha;
+  }
+  final coreFile = File(
+    p.join(rootDir, 'libclash', 'windows', 'FlClashCore.exe'),
+  );
+  if (!coreFile.existsSync()) return null;
+  return sha256.bind(coreFile.openRead()).first.then((digest) {
+    final sha = digest.toString();
+    print('Computed CORE_SHA256 from ${coreFile.path}: $sha');
+    return sha;
+  });
 }
 
 String _detectArch() {
