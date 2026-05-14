@@ -9,20 +9,22 @@ plugins {
     id("com.google.firebase.crashlytics") apply false
 }
 
-val googleServicesFile: File = file("google-services.json")
-val hasGoogleServicesConfig =
-    googleServicesFile.exists() && googleServicesFile.length() > 0
-
-if (hasGoogleServicesConfig) {
-    apply(plugin = "com.google.gms.google-services")
-    apply(plugin = "com.google.firebase.crashlytics")
-}
-
 val localPropertiesFile = rootProject.file("local.properties")
 val localProperties = Properties().apply {
     if (localPropertiesFile.exists()) {
         localPropertiesFile.inputStream().use { load(it) }
     }
+}
+
+val googleServicesFile: File = file("google-services.json")
+val hasGoogleServicesConfig =
+    localProperties.getProperty("enableGoogleServices") == "true" &&
+            googleServicesFile.exists() &&
+            googleServicesFile.length() > 0
+
+if (hasGoogleServicesConfig) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 val mStoreFile: File = file("keystore.jks")

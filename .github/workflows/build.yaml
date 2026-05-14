@@ -75,6 +75,7 @@ jobs:
           fi
           if [ -n "$SERVICE_JSON_B64" ]; then
             printf '%s' "$SERVICE_JSON_B64" | base64 --decode > android/app/google-services.json
+            echo "enableGoogleServices=true" >> android/local.properties
           fi
           if [ -n "$KEY_ALIAS" ]; then
             echo "keyAlias=$KEY_ALIAS" >> android/local.properties

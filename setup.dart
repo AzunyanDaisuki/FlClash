@@ -130,6 +130,9 @@ Future<int> _package(
   }
 
   final coreSha256 = platform == 'windows' ? await _buildGoCore(rootDir) : null;
+  if (platform == 'windows' && coreSha256 == null) {
+    return 1;
+  }
 
   final file = File(p.join(rootDir, 'env.json'));
 
@@ -184,15 +187,18 @@ Future<String?> _buildGoCore(String rootDir) async {
     'buildkit',
     'build_tool',
   );
-  final result = await Process.run('dart', [
+  final process = await Process.start('dart', [
     'run',
     'build_tool',
     'windows',
     '--root-dir',
     rootDir,
-  ], workingDirectory: buildToolDir);
-  if (result.exitCode != 0) {
-    stderr.write(result.stderr);
+  ], workingDirectory: buildToolDir, runInShell: Platform.isWindows);
+  final stdoutDone = process.stdout.pipe(stdout);
+  final stderrDone = process.stderr.pipe(stderr);
+  final exitCode = await process.exitCode;
+  await Future.wait([stdoutDone, stderrDone]);
+  if (exitCode != 0) {
     return null;
   }
   final shaFile = File(p.join(rootDir, 'core_sha256.json'));
