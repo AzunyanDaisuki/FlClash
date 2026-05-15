@@ -30,4 +30,5 @@ if not defined DART_SDK (
 
 cd /d "%BUILD_TOOL_DIR%"
 
-"%DART%" run build_tool %* --root-dir "%PROJECT_DIR%"
+"%DART%" run build_tool --root-dir "%PROJECT_DIR%" %*
+exit /b %ERRORLEVEL%

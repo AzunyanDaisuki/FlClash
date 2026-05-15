@@ -34,4 +34,4 @@ fi
 # Run from build_tool directory so it finds its own .dart_tool/package_config.json
 cd "$BUILD_TOOL_DIR"
 
-exec "$DART" run build_tool "$@" --root-dir "$PROJECT_DIR"
+exec "$DART" run build_tool --root-dir "$PROJECT_DIR" "$@"
