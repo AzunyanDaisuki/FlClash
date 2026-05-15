@@ -10,6 +10,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
+import 'package:yaml/yaml.dart';
 
 class CoreController {
   static CoreController? _instance;
@@ -210,15 +211,50 @@ class CoreController {
 
   Future<Map<String, dynamic>> getConfig(int id) async {
     final profilePath = await appPath.getProfilePath(id.toString());
-    final res = await _interface.getConfig(profilePath);
+    final res = await _interface.getConfig(
+      profilePath,
+      timeout: system.isAndroid ? const Duration(seconds: 3) : null,
+    );
     if (res.isSuccess) {
-      final data = Map<String, dynamic>.from(res.data);
+      final data = _normalizeConfigMap(Map<String, dynamic>.from(res.data));
+      if (data.isNotEmpty) {
+        return data;
+      }
+    }
+    if (system.isAndroid) {
+      return _getConfigFromProfileFile(profilePath);
+    }
+    throw res.message;
+  }
+
+  Future<Map<String, dynamic>> _getConfigFromProfileFile(String path) async {
+    final content = await File(path).readAsString();
+    final data = _yamlToJsonValue(loadYaml(content));
+    if (data is Map<String, dynamic>) {
+      return _normalizeConfigMap(data);
+    }
+    return {};
+  }
+
+  Map<String, dynamic> _normalizeConfigMap(Map<String, dynamic> data) {
+    if (data.containsKey('rule')) {
       data['rules'] = data['rule'];
       data.remove('rule');
-      return data;
-    } else {
-      throw res.message;
     }
+    return data;
+  }
+
+  dynamic _yamlToJsonValue(dynamic value) {
+    if (value is YamlMap) {
+      return {
+        for (final entry in value.entries)
+          entry.key.toString(): _yamlToJsonValue(entry.value),
+      };
+    }
+    if (value is YamlList) {
+      return value.map(_yamlToJsonValue).toList();
+    }
+    return value;
   }
 
   Future<Traffic> getTraffic(bool onlyStatisticsProxy) async {

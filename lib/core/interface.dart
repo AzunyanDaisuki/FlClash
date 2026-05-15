@@ -18,7 +18,7 @@ mixin CoreInterface {
 
   Future<String> validateConfig(String path);
 
-  Future<Result> getConfig(String path);
+  Future<Result> getConfig(String path, {Duration? timeout});
 
   Future<String> asyncTestDelay(String url, String proxyName);
 
@@ -160,8 +160,12 @@ abstract class CoreHandlerInterface with CoreInterface {
   }
 
   @override
-  Future<Result> getConfig(String path) async {
-    final res = await _invoke(method: ActionMethod.getConfig, data: path);
+  Future<Result> getConfig(String path, {Duration? timeout}) async {
+    final res = await _invoke(
+      method: ActionMethod.getConfig,
+      data: path,
+      timeout: timeout,
+    );
     return res ?? Result.success({});
   }
 
