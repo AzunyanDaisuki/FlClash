@@ -37,10 +37,14 @@ object GlobalState : CoroutineScope by CoroutineScope(Dispatchers.Default) {
 
     fun setCrashlytics(enable: Boolean) {
         _application?.let {
-            FirebaseApp.initializeApp(it)
-            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = enable
-            if (enable) {
-                log("init crashlytics ${it.processName}")
+            runCatching {
+                FirebaseApp.initializeApp(it)
+                FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = enable
+                if (enable) {
+                    log("init crashlytics ${it.processName}")
+                }
+            }.onFailure { e ->
+                log("skip crashlytics: ${e.message}")
             }
         }
     }
