@@ -66,6 +66,7 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          rm -f android/app/keystore.jks android/app/google-services.json
           if [ -n "$KEYSTORE" ]; then
             echo "$KEYSTORE" | base64 --decode > android/app/keystore.jks
             echo "keyAlias=$KEY_ALIAS" >> android/local.properties
@@ -74,6 +75,7 @@ jobs:
           fi
           if [ -n "$SERVICE_JSON" ]; then
             echo "$SERVICE_JSON" | base64 --decode > android/app/google-services.json
+            echo "ENABLE_GOOGLE_SERVICES=true" >> "$GITHUB_ENV"
           fi
 
       - name: Setup Android SDK
@@ -84,6 +86,7 @@ jobs:
         if: startsWith(matrix.platform,'android')
         run: |
           sdkmanager "ndk;28.2.13676358"
+          echo "ndk.dir=$ANDROID_HOME/ndk/28.2.13676358" >> android/local.properties
           echo "ANDROID_NDK=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
 

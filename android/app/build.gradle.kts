@@ -8,7 +8,9 @@ plugins {
 }
 
 val googleServicesFile: File = file("google-services.json")
-val hasGoogleServices = googleServicesFile.exists() && googleServicesFile.length() > 0
+val enableGoogleServices = System.getenv("ENABLE_GOOGLE_SERVICES") == "true"
+val hasGoogleServices =
+    enableGoogleServices && googleServicesFile.exists() && googleServicesFile.length() > 0
 
 if (hasGoogleServices) {
     apply(plugin = "com.google.gms.google-services")
