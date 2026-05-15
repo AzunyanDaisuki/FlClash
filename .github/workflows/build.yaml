@@ -39,26 +39,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: android
-            os: ubuntu-latest
           - platform: windows
             os: Windows-2022
             arch: amd64
-          - platform: linux
-            os: ubuntu-22.04
-            arch: amd64
-          - platform: macos
-            os: macos-15-intel
-            arch: amd64
-          - platform: macos
-            os: macos-latest
-            arch: arm64
-          - platform: windows
-            os: windows-11-arm
-            arch: arm64
-          - platform: linux
-            os: ubuntu-24.04-arm
-            arch: arm64
 
     steps:
       - name: Setup rust
@@ -180,6 +163,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload:
+    if: false
     permissions: write-all
     needs: [ build ]
     runs-on: ubuntu-latest
