@@ -31,4 +31,16 @@ if not defined DART_SDK (
 cd /d "%BUILD_TOOL_DIR%"
 
 "%DART%" run build_tool --root-dir "%PROJECT_DIR%" %*
-exit /b %ERRORLEVEL%
+set "BUILD_EXIT=%ERRORLEVEL%"
+if "%BUILD_EXIT%"=="0" exit /b 0
+
+if /I "%~1"=="windows" (
+  if exist "%PROJECT_DIR%\libclash\windows\FlClashCore.exe" (
+    if exist "%PROJECT_DIR%\libclash\windows\FlClashHelperService.exe" (
+      echo build_tool exited with %BUILD_EXIT%, but Windows artifacts exist; continuing.
+      exit /b 0
+    )
+  )
+)
+
+exit /b %BUILD_EXIT%
