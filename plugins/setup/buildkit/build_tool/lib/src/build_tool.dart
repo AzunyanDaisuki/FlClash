@@ -225,6 +225,7 @@ Future<void> runMain(List<String> args) async {
     final topResults = runner.parse(args);
     _rootDir = (topResults['root-dir'] as String?) ?? _findProjectRoot();
     await runner.run(args);
+    exit(0);
   } on BuildException catch (e) {
     _log.severe(e.toString());
     exit(1);
