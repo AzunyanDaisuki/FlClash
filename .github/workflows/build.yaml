@@ -39,6 +39,9 @@ jobs:
     strategy:
       matrix:
         include:
+          - platform: windows
+            os: windows-latest
+            arch: amd64
           - platform: android
             os: ubuntu-latest
             arch: arm64
