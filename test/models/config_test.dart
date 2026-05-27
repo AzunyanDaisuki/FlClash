@@ -162,6 +162,41 @@ void main() {
     });
   });
 
+  group('PatchClashConfig JSON round-trip', () {
+    test('defaults match Clash patch defaults', () {
+      const config = PatchClashConfig();
+
+      expect(config.mixedPort, defaultMixedPort);
+      expect(config.allowLan, false);
+      expect(config.mode, Mode.rule);
+      expect(config.externalController, ExternalControllerStatus.close);
+      expect(config.geodataLoader, GeodataLoader.memconservative);
+    });
+
+    test('custom values survive round-trip', () {
+      const config = PatchClashConfig(
+        mixedPort: 7890,
+        allowLan: true,
+        mode: Mode.rule,
+        logLevel: LogLevel.debug,
+        externalController: ExternalControllerStatus.open,
+        geodataLoader: GeodataLoader.memconservative,
+      );
+
+      final restored = roundTrip(
+        () => config.toJson(),
+        PatchClashConfig.fromJson,
+      );
+
+      expect(restored.mixedPort, 7890);
+      expect(restored.allowLan, true);
+      expect(restored.mode, Mode.rule);
+      expect(restored.logLevel, LogLevel.debug);
+      expect(restored.externalController, ExternalControllerStatus.open);
+      expect(restored.geodataLoader, GeodataLoader.memconservative);
+    });
+  });
+
   group('ProxiesStyleProps JSON round-trip', () {
     test('default values', () {
       const props = ProxiesStyleProps();
