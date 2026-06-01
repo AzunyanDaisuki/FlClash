@@ -50,6 +50,10 @@ class Profiles extends _$Profiles {
     return ref.watch(profilesStreamProvider).value ?? [];
   }
 
+  Future<void> reload() async {
+    state = await database.profilesDao.query().get();
+  }
+
   void put(Profile profile) {
     final previous = List<Profile>.from(state);
     final newProfile = previous.optimizeLabel(profile);
