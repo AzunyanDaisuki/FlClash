@@ -6,15 +6,15 @@ import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.follow.clash.common.GlobalState
-import com.follow.clash.core.Core
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -23,7 +23,6 @@ import java.net.URL
 import java.net.URLDecoder
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
 
 class ProfileAutoUpdateWorker(
     appContext: Context,
@@ -35,6 +34,11 @@ class ProfileAutoUpdateWorker(
             updateDueProfiles()
         }.onFailure {
             GlobalState.log("Profile auto update failed: ${it.message}")
+        }
+        runCatching {
+            enqueueNext(applicationContext, readAutoUpdateIntervalMillis())
+        }.onFailure {
+            GlobalState.log("Profile auto update schedule failed: ${it.message}")
         }
         Result.success()
     }
@@ -107,6 +111,33 @@ class ProfileAutoUpdateWorker(
         return profiles
     }
 
+    private fun readAutoUpdateIntervalMillis(): Long? {
+        val databaseFile = File(applicationContext.filesDir, "database.sqlite")
+        if (!databaseFile.exists()) return null
+        return SQLiteDatabase.openDatabase(
+            databaseFile.path,
+            null,
+            SQLiteDatabase.OPEN_READONLY,
+        ).use { database ->
+            database.rawQuery(
+                """
+                SELECT MIN(auto_update_duration_millis)
+                FROM profiles
+                WHERE auto_update = 1
+                  AND url != ''
+                  AND auto_update_duration_millis > 0
+                """.trimIndent(),
+                null,
+            ).use { cursor ->
+                if (cursor.moveToFirst() && !cursor.isNull(0)) {
+                    cursor.getLong(0)
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
     private suspend fun updateProfile(database: SQLiteDatabase, profile: ProfileRecord) {
         val downloadedProfile = downloadProfile(profile.url)
         val tempFile = File.createTempFile("profile_${profile.id}", ".yaml", applicationContext.cacheDir)
@@ -155,7 +186,7 @@ class ProfileAutoUpdateWorker(
 
     private suspend fun initCore() {
         val initParams = JSONObject()
-            .put("homeDir", applicationContext.filesDir.path)
+            .put("home-dir", applicationContext.filesDir.path)
             .put("version", Build.VERSION.SDK_INT)
         invokeCoreAction("initClash", initParams.toString())
     }
@@ -165,21 +196,27 @@ class ProfileAutoUpdateWorker(
         return result.optString("data", "")
     }
 
-    private suspend fun invokeCoreAction(method: String, data: Any): JSONObject =
-        suspendCancellableCoroutine { continuation ->
-            val action = JSONObject()
-                .put("id", "profileAutoUpdate#${UUID.randomUUID()}")
-                .put("method", method)
-                .put("data", data)
-            Core.invokeAction(action.toString()) { result ->
-                val json = runCatching {
-                    JSONObject(result ?: "{}")
-                }.getOrDefault(JSONObject())
-                if (continuation.isActive) {
-                    continuation.resume(json)
-                }
+    private suspend fun invokeCoreAction(method: String, data: Any): JSONObject {
+        val result = CompletableDeferred<String>()
+        val action = JSONObject()
+            .put("id", "profileAutoUpdate#${UUID.randomUUID()}")
+            .put("method", method)
+            .put("data", data)
+        Service.bind()
+        Service.invokeAction(action.toString()) {
+            if (!result.isCompleted) {
+                result.complete(it)
+            }
+        }.onFailure {
+            if (!result.isCompleted) {
+                result.completeExceptionally(it)
             }
         }
+        val raw = withTimeout(CORE_ACTION_TIMEOUT_MILLIS) { result.await() }
+        return runCatching {
+            JSONObject(raw)
+        }.getOrDefault(JSONObject())
+    }
 
     private fun subscriptionInfoJson(value: String?): String {
         val data = JSONObject()
@@ -233,7 +270,7 @@ class ProfileAutoUpdateWorker(
 
     companion object {
         private const val UNIQUE_WORK_NAME = "profile_auto_update"
-        private const val MIN_PERIODIC_INTERVAL_MILLIS = 15 * 60 * 1000L
+        private const val CORE_ACTION_TIMEOUT_MILLIS = 60_000L
 
         fun sync(context: Context, intervalMillis: Long?) {
             val workManager = WorkManager.getInstance(context)
@@ -241,22 +278,31 @@ class ProfileAutoUpdateWorker(
                 workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
                 return
             }
-            val repeatIntervalMillis = maxOf(intervalMillis, MIN_PERIODIC_INTERVAL_MILLIS)
-            val request =
-                PeriodicWorkRequestBuilder<ProfileAutoUpdateWorker>(
-                    repeatIntervalMillis,
-                    TimeUnit.MILLISECONDS,
+            enqueue(context, intervalMillis, ExistingWorkPolicy.REPLACE)
+        }
+
+        private fun enqueueNext(context: Context, intervalMillis: Long?) {
+            if (intervalMillis == null || intervalMillis <= 0) return
+            enqueue(context, intervalMillis, ExistingWorkPolicy.APPEND_OR_REPLACE)
+        }
+
+        private fun enqueue(
+            context: Context,
+            intervalMillis: Long,
+            policy: ExistingWorkPolicy,
+        ) {
+            val request = OneTimeWorkRequestBuilder<ProfileAutoUpdateWorker>()
+                .setInitialDelay(intervalMillis, TimeUnit.MILLISECONDS)
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
                 )
-                    .setConstraints(
-                        Constraints.Builder()
-                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                            .build()
-                    )
-                    .addTag(UNIQUE_WORK_NAME)
-                    .build()
-            workManager.enqueueUniquePeriodicWork(
+                .addTag(UNIQUE_WORK_NAME)
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(
                 UNIQUE_WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                policy,
                 request,
             )
         }
