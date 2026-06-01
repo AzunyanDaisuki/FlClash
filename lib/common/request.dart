@@ -12,13 +12,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
 class Request {
+  static const _profileUpdateTimeout = Duration(minutes: 3);
+
   late final Dio dio;
   late final Dio _clashDio;
   String? userAgent;
 
   Request() {
     dio = Dio(BaseOptions(headers: {'User-Agent': browserUa}));
-    _clashDio = Dio();
+    _clashDio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        sendTimeout: _profileUpdateTimeout,
+        receiveTimeout: _profileUpdateTimeout,
+      ),
+    );
     _clashDio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () {
         final client = HttpClient();
@@ -36,12 +44,19 @@ class Request {
       return await _clashDio.get<Uint8List>(
         url,
         options: Options(responseType: ResponseType.bytes),
-      );
+      ).timeout(_profileUpdateTimeout);
     } catch (e) {
       commonPrint.log('getFileResponseForUrl error ${e.toString()}');
+      if (e is TimeoutException) {
+        throw currentAppLocalizations.networkException;
+      }
       if (e is DioException) {
         if (e.type == DioExceptionType.unknown) {
           throw currentAppLocalizations.unknownNetworkError;
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          throw currentAppLocalizations.networkException;
         } else if (e.type == DioExceptionType.badResponse) {
           throw currentAppLocalizations.networkException;
         }

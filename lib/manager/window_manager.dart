@@ -53,6 +53,7 @@ class _WindowContainerState extends ConsumerState<WindowManager>
     super.onWindowFocus();
     commonPrint.log('focus');
     render?.resume();
+    unawaited(ref.read(profilesActionProvider.notifier).autoUpdateProfiles());
   }
 
   @override
@@ -94,6 +95,7 @@ class _WindowContainerState extends ConsumerState<WindowManager>
   void onWindowRestore() {
     commonPrint.log('restore');
     render?.resume();
+    unawaited(ref.read(profilesActionProvider.notifier).autoUpdateProfiles());
     super.onWindowRestore();
   }
 

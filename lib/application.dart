@@ -83,10 +83,13 @@ class ApplicationState extends ConsumerState<Application> {
   }
 
   void _autoUpdateProfilesTask() {
-    _autoUpdateProfilesTaskTimer = Timer(const Duration(minutes: 20), () async {
-      await ref.read(profilesActionProvider.notifier).autoUpdateProfiles();
-      _autoUpdateProfilesTask();
-    });
+    _autoUpdateProfilesTaskTimer?.cancel();
+    _autoUpdateProfilesTaskTimer = Timer.periodic(
+      const Duration(minutes: 20),
+      (_) => unawaited(
+        ref.read(profilesActionProvider.notifier).autoUpdateProfiles(),
+      ),
+    );
   }
 
   Widget _buildPlatformState({required Widget child}) {

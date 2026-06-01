@@ -84,6 +84,7 @@ class _AppStateManagerState extends ConsumerState<AppStateManager>
     if (state == AppLifecycleState.resumed) {
       permissions.check();
       render?.resume();
+      unawaited(ref.read(profilesActionProvider.notifier).autoUpdateProfiles());
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ref = globalState.container;
         ref.read(setupActionProvider.notifier).tryCheckIp();

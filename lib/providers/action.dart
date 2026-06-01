@@ -826,6 +826,8 @@ class ProxiesAction extends _$ProxiesAction {
 
 @Riverpod(keepAlive: true)
 class ProfilesAction extends _$ProfilesAction {
+  bool _isAutoUpdatingProfiles = false;
+
   @override
   void build() {}
 
@@ -858,19 +860,27 @@ class ProfilesAction extends _$ProfilesAction {
   }
 
   Future<void> autoUpdateProfiles() async {
-    for (final profile in ref.read(profilesProvider)) {
-      if (!profile.autoUpdate) continue;
-      final isNotNeedUpdate = profile.lastUpdateDate
-          ?.add(profile.autoUpdateDuration)
-          .isBeforeNow;
-      if (isNotNeedUpdate == false || profile.type == ProfileType.file) {
-        continue;
+    if (_isAutoUpdatingProfiles) {
+      return;
+    }
+    _isAutoUpdatingProfiles = true;
+    try {
+      for (final profile in ref.read(profilesProvider)) {
+        if (!profile.autoUpdate || profile.type == ProfileType.file) continue;
+        final shouldUpdate =
+            profile.lastUpdateDate?.add(profile.autoUpdateDuration).isBeforeNow ??
+            true;
+        if (!shouldUpdate) continue;
+        try {
+          await updateProfile(profile);
+        } catch (e) {
+          commonPrint.log(e.toString(), logLevel: LogLevel.warning);
+        }
       }
-      try {
-        await updateProfile(profile);
-      } catch (e) {
-        commonPrint.log(e.toString(), logLevel: LogLevel.warning);
-      }
+    } catch (e) {
+      commonPrint.log(e.toString(), logLevel: LogLevel.warning);
+    } finally {
+      _isAutoUpdatingProfiles = false;
     }
   }
 
