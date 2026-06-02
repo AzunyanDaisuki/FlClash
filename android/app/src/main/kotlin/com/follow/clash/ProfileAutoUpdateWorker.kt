@@ -111,33 +111,6 @@ class ProfileAutoUpdateWorker(
         return profiles
     }
 
-    private fun readAutoUpdateIntervalMillis(): Long? {
-        val databaseFile = File(applicationContext.filesDir, "database.sqlite")
-        if (!databaseFile.exists()) return null
-        return SQLiteDatabase.openDatabase(
-            databaseFile.path,
-            null,
-            SQLiteDatabase.OPEN_READONLY,
-        ).use { database ->
-            database.rawQuery(
-                """
-                SELECT MIN(auto_update_duration_millis)
-                FROM profiles
-                WHERE auto_update = 1
-                  AND url != ''
-                  AND auto_update_duration_millis > 0
-                """.trimIndent(),
-                null,
-            ).use { cursor ->
-                if (cursor.moveToFirst() && !cursor.isNull(0)) {
-                    cursor.getLong(0)
-                } else {
-                    null
-                }
-            }
-        }
-    }
-
     private suspend fun updateProfile(database: SQLiteDatabase, profile: ProfileRecord) {
         val downloadedProfile = downloadProfile(profile.url)
         val tempFile = File.createTempFile("profile_${profile.id}", ".yaml", applicationContext.cacheDir)
@@ -274,25 +247,36 @@ class ProfileAutoUpdateWorker(
 
         fun sync(context: Context, intervalMillis: Long?) {
             val workManager = WorkManager.getInstance(context)
-            if (intervalMillis == null || intervalMillis <= 0) {
+            val resolvedIntervalMillis = intervalMillis ?: readAutoUpdateIntervalMillis(context)
+            if (resolvedIntervalMillis == null || resolvedIntervalMillis <= 0) {
                 workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
                 return
             }
-            enqueue(context, intervalMillis, ExistingWorkPolicy.REPLACE)
+            val delayMillis = readNextUpdateDelayMillis(context) ?: resolvedIntervalMillis
+            enqueue(context, delayMillis, ExistingWorkPolicy.REPLACE)
         }
 
         private fun enqueueNext(context: Context, intervalMillis: Long?) {
-            if (intervalMillis == null || intervalMillis <= 0) return
-            enqueue(context, intervalMillis, ExistingWorkPolicy.APPEND_OR_REPLACE)
+            val shortestIntervalMillis = readAutoUpdateIntervalMillis(context) ?: intervalMillis
+            if (shortestIntervalMillis == null || shortestIntervalMillis <= 0) return
+            val delayMillis = readNextUpdateDelayMillis(context) ?: shortestIntervalMillis
+            enqueue(
+                context,
+                when (delayMillis <= 0) {
+                    true -> shortestIntervalMillis
+                    false -> delayMillis
+                },
+                ExistingWorkPolicy.APPEND_OR_REPLACE,
+            )
         }
 
         private fun enqueue(
             context: Context,
-            intervalMillis: Long,
+            delayMillis: Long,
             policy: ExistingWorkPolicy,
         ) {
             val request = OneTimeWorkRequestBuilder<ProfileAutoUpdateWorker>()
-                .setInitialDelay(intervalMillis, TimeUnit.MILLISECONDS)
+                .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -305,6 +289,80 @@ class ProfileAutoUpdateWorker(
                 policy,
                 request,
             )
+        }
+
+        private fun readAutoUpdateIntervalMillis(context: Context): Long? {
+            val databaseFile = databaseFile(context)
+            if (!databaseFile.exists()) return null
+            return SQLiteDatabase.openDatabase(
+                databaseFile.path,
+                null,
+                SQLiteDatabase.OPEN_READONLY,
+            ).use { database ->
+                database.rawQuery(
+                    """
+                    SELECT MIN(auto_update_duration_millis)
+                    FROM profiles
+                    WHERE auto_update = 1
+                      AND url != ''
+                      AND auto_update_duration_millis > 0
+                    """.trimIndent(),
+                    null,
+                ).use { cursor ->
+                    if (cursor.moveToFirst() && !cursor.isNull(0)) {
+                        cursor.getLong(0)
+                    } else {
+                        null
+                    }
+                }
+            }
+        }
+
+        private fun readNextUpdateDelayMillis(context: Context): Long? {
+            val databaseFile = databaseFile(context)
+            if (!databaseFile.exists()) return null
+            return SQLiteDatabase.openDatabase(
+                databaseFile.path,
+                null,
+                SQLiteDatabase.OPEN_READONLY,
+            ).use { database ->
+                database.query(
+                    "profiles",
+                    arrayOf("last_update_date", "auto_update_duration_millis"),
+                    "auto_update = 1 AND url != '' AND auto_update_duration_millis > 0",
+                    null,
+                    null,
+                    null,
+                    null,
+                ).use { cursor ->
+                    val now = System.currentTimeMillis()
+                    val lastUpdateDateIndex = cursor.getColumnIndexOrThrow("last_update_date")
+                    val durationIndex = cursor.getColumnIndexOrThrow("auto_update_duration_millis")
+                    var nextDelayMillis: Long? = null
+                    while (cursor.moveToNext()) {
+                        val durationMillis = cursor.getLong(durationIndex)
+                        val delayMillis = when (cursor.isNull(lastUpdateDateIndex)) {
+                            true -> 0L
+                            false -> {
+                                val nextUpdateMillis =
+                                    cursor.getLong(lastUpdateDateIndex).toEpochMillis() + durationMillis
+                                maxOf(0L, nextUpdateMillis - now)
+                            }
+                        }
+                        val currentNextDelayMillis = nextDelayMillis
+                        nextDelayMillis = when {
+                            currentNextDelayMillis == null -> delayMillis
+                            delayMillis < currentNextDelayMillis -> delayMillis
+                            else -> currentNextDelayMillis
+                        }
+                    }
+                    nextDelayMillis
+                }
+            }
+        }
+
+        private fun databaseFile(context: Context): File {
+            return File(context.filesDir, "database.sqlite")
         }
     }
 }
