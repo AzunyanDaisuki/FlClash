@@ -36,7 +36,7 @@ class ProfileAutoUpdateWorker(
             GlobalState.log("Profile auto update failed: ${it.message}")
         }
         runCatching {
-            enqueueNext(applicationContext, readAutoUpdateIntervalMillis())
+            enqueueNext(applicationContext, null)
         }.onFailure {
             GlobalState.log("Profile auto update schedule failed: ${it.message}")
         }
