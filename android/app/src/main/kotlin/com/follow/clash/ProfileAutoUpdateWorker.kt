@@ -21,6 +21,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
+import java.util.Calendar
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -55,8 +56,9 @@ class ProfileAutoUpdateWorker(
             val profiles = queryProfiles(database)
             if (profiles.isEmpty()) return
             initCore()
+            val now = System.currentTimeMillis()
             profiles.forEach { profile ->
-                if (!profile.shouldUpdate()) return@forEach
+                if (!profile.shouldUpdate(now)) return@forEach
                 runCatching {
                     updateProfile(database, profile)
                 }.onFailure {
@@ -223,9 +225,9 @@ class ProfileAutoUpdateWorker(
         val lastUpdateDate: Long?,
         val autoUpdateDurationMillis: Long,
     ) {
-        fun shouldUpdate(): Boolean {
+        fun shouldUpdate(nowMillis: Long): Boolean {
             val lastUpdateMillis = lastUpdateDate?.toEpochMillis() ?: return true
-            return lastUpdateMillis + autoUpdateDurationMillis <= System.currentTimeMillis()
+            return lastUpdateMillis < previousFixedIntervalMillis(autoUpdateDurationMillis, nowMillis)
         }
 
         fun nextLabel(contentDisposition: String?): String {
@@ -252,22 +254,21 @@ class ProfileAutoUpdateWorker(
                 workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
                 return
             }
-            val delayMillis = readNextUpdateDelayMillis(context) ?: resolvedIntervalMillis
+            val delayMillis = nextFixedIntervalDelayMillis(
+                intervalMillis = resolvedIntervalMillis,
+                includeCurrentBoundary = true,
+            )
             enqueue(context, delayMillis, ExistingWorkPolicy.REPLACE)
         }
 
         private fun enqueueNext(context: Context, intervalMillis: Long?) {
             val shortestIntervalMillis = readAutoUpdateIntervalMillis(context) ?: intervalMillis
             if (shortestIntervalMillis == null || shortestIntervalMillis <= 0) return
-            val delayMillis = readNextUpdateDelayMillis(context) ?: shortestIntervalMillis
-            enqueue(
-                context,
-                when (delayMillis <= 0) {
-                    true -> shortestIntervalMillis
-                    false -> delayMillis
-                },
-                ExistingWorkPolicy.APPEND_OR_REPLACE,
+            val delayMillis = nextFixedIntervalDelayMillis(
+                intervalMillis = shortestIntervalMillis,
+                includeCurrentBoundary = false,
             )
+            enqueue(context, delayMillis, ExistingWorkPolicy.APPEND_OR_REPLACE)
         }
 
         private fun enqueue(
@@ -318,53 +319,43 @@ class ProfileAutoUpdateWorker(
             }
         }
 
-        private fun readNextUpdateDelayMillis(context: Context): Long? {
-            val databaseFile = databaseFile(context)
-            if (!databaseFile.exists()) return null
-            return SQLiteDatabase.openDatabase(
-                databaseFile.path,
-                null,
-                SQLiteDatabase.OPEN_READONLY,
-            ).use { database ->
-                database.query(
-                    "profiles",
-                    arrayOf("last_update_date", "auto_update_duration_millis"),
-                    "auto_update = 1 AND url != '' AND auto_update_duration_millis > 0",
-                    null,
-                    null,
-                    null,
-                    null,
-                ).use { cursor ->
-                    val now = System.currentTimeMillis()
-                    val lastUpdateDateIndex = cursor.getColumnIndexOrThrow("last_update_date")
-                    val durationIndex = cursor.getColumnIndexOrThrow("auto_update_duration_millis")
-                    var nextDelayMillis: Long? = null
-                    while (cursor.moveToNext()) {
-                        val durationMillis = cursor.getLong(durationIndex)
-                        val delayMillis = when (cursor.isNull(lastUpdateDateIndex)) {
-                            true -> 0L
-                            false -> {
-                                val nextUpdateMillis =
-                                    cursor.getLong(lastUpdateDateIndex).toEpochMillis() + durationMillis
-                                maxOf(0L, nextUpdateMillis - now)
-                            }
-                        }
-                        val currentNextDelayMillis = nextDelayMillis
-                        nextDelayMillis = when {
-                            currentNextDelayMillis == null -> delayMillis
-                            delayMillis < currentNextDelayMillis -> delayMillis
-                            else -> currentNextDelayMillis
-                        }
-                    }
-                    nextDelayMillis
-                }
-            }
-        }
-
         private fun databaseFile(context: Context): File {
             return File(context.filesDir, "database.sqlite")
         }
     }
+}
+
+private fun nextFixedIntervalDelayMillis(
+    intervalMillis: Long,
+    includeCurrentBoundary: Boolean,
+    nowMillis: Long = System.currentTimeMillis(),
+): Long {
+    val elapsedMillis = nowMillis - localDayStartMillis(nowMillis)
+    val remainderMillis = positiveMod(elapsedMillis, intervalMillis)
+    return when {
+        remainderMillis == 0L && includeCurrentBoundary -> 0L
+        remainderMillis == 0L -> intervalMillis
+        else -> intervalMillis - remainderMillis
+    }
+}
+
+private fun previousFixedIntervalMillis(intervalMillis: Long, nowMillis: Long): Long {
+    val elapsedMillis = nowMillis - localDayStartMillis(nowMillis)
+    return nowMillis - positiveMod(elapsedMillis, intervalMillis)
+}
+
+private fun localDayStartMillis(nowMillis: Long): Long {
+    return Calendar.getInstance().apply {
+        timeInMillis = nowMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+private fun positiveMod(value: Long, divisor: Long): Long {
+    return ((value % divisor) + divisor) % divisor
 }
 
 private fun Long.toEpochMillis(): Long {
