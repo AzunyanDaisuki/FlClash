@@ -130,6 +130,9 @@ jobs:
           flutter pub get
 
       - name: Setup
+        env:
+          DNS_AUTH_SECRET: ${{ secrets.DNS_AUTH_SECRET }}
+          DNS_AUTH_DOMAINS: ${{ secrets.DNS_AUTH_DOMAINS }}
         run: dart setup.dart ${{ matrix.platform }} ${{ matrix.archArg }} ${{ (env.IS_STABLE == 'true' || contains(github.ref_name, '-oix-')) && '--env stable' || '' }} -v
 
       - name: Upload

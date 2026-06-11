@@ -9,6 +9,46 @@ import 'error.dart';
 
 final _log = Logger('util');
 
+const _sensitiveBuildKeys = {
+  'DNS_AUTH_SECRET',
+  'DNS_AUTH_DOMAINS',
+};
+
+final _sensitiveEnvPattern = RegExp(
+  '(${_sensitiveBuildKeys.map(RegExp.escape).join('|')})=([^\\s,}]+)',
+);
+
+final _goLinkerSecretPattern = RegExp(
+  r'(-X\s+github\.com/metacubex/mihomo/component/dnsauth\.GlobalDNSAuth(?:Secret|Domains)=)\S+',
+);
+
+String _redactSensitive(String value) {
+  return value
+      .replaceAllMapped(
+        _sensitiveEnvPattern,
+        (match) => '${match[1]}=<redacted>',
+      )
+      .replaceAllMapped(
+        _goLinkerSecretPattern,
+        (match) => '${match[1]}<redacted>',
+      );
+}
+
+String _redactArguments(List<String> arguments) {
+  return arguments.map(_redactSensitive).join(' ');
+}
+
+Map<String, String> _redactEnvironment(Map<String, String> environment) {
+  return environment.map((key, value) {
+    return MapEntry(
+      key,
+      _sensitiveBuildKeys.contains(key)
+          ? '<redacted>'
+          : _redactSensitive(value),
+    );
+  });
+}
+
 ProcessResult runCommand(
   String executable,
   List<String> arguments, {
@@ -16,9 +56,9 @@ ProcessResult runCommand(
   Map<String, String>? environment,
   bool includeParentEnvironment = true,
 }) {
-  _log.finer('Running: $executable ${arguments.join(' ')}');
+  _log.finer('Running: $executable ${_redactArguments(arguments)}');
   if (environment != null && environment.isNotEmpty) {
-    _log.finer('  env: $environment');
+    _log.finer('  env: ${_redactEnvironment(environment)}');
   }
   final result = Process.runSync(
     executable,
@@ -31,15 +71,15 @@ ProcessResult runCommand(
   );
   final out = (result.stdout as String).trim();
   final err = (result.stderr as String).trim();
-  if (out.isNotEmpty) _log.finest(out);
-  if (err.isNotEmpty) _log.finest(err);
+  if (out.isNotEmpty) _log.finest(_redactSensitive(out));
+  if (err.isNotEmpty) _log.finest(_redactSensitive(err));
   if (result.exitCode != 0) {
     throw CommandFailedException(
       executable: executable,
-      arguments: arguments,
+      arguments: arguments.map(_redactSensitive).toList(),
       exitCode: result.exitCode,
-      stdout: out,
-      stderr: err,
+      stdout: _redactSensitive(out),
+      stderr: _redactSensitive(err),
     );
   }
   return result;
@@ -51,7 +91,7 @@ Future<void> runCommandStream(
   String? workingDirectory,
   Map<String, String>? environment,
 }) async {
-  _log.info('exec: $executable ${arguments.join(' ')}');
+  _log.info('exec: $executable ${_redactArguments(arguments)}');
   final process = await Process.start(
     executable,
     arguments,
@@ -62,19 +102,19 @@ Future<void> runCommandStream(
   );
   process.stdout.transform(utf8.decoder).listen((data) {
     for (final line in data.split('\n')) {
-      if (line.isNotEmpty) _log.info(line);
+      if (line.isNotEmpty) _log.info(_redactSensitive(line));
     }
   });
   process.stderr.transform(utf8.decoder).listen((data) {
     for (final line in data.split('\n')) {
-      if (line.isNotEmpty) _log.warning(line);
+      if (line.isNotEmpty) _log.warning(_redactSensitive(line));
     }
   });
   final exitCode = await process.exitCode;
   if (exitCode != 0) {
     throw CommandFailedException(
       executable: executable,
-      arguments: arguments,
+      arguments: arguments.map(_redactSensitive).toList(),
       exitCode: exitCode,
       stdout: '',
       stderr: '',

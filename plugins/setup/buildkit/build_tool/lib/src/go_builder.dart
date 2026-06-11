@@ -36,6 +36,21 @@ class GoBuilder {
   String get _corePath => p.join(rootDir, config.coreDir);
   String get _outputPath => p.join(rootDir, config.outputDir);
 
+  String _buildLdflags() {
+    final ldflags = StringBuffer(config.goLdflags);
+    final dnsAuthSecret = Platform.environment['DNS_AUTH_SECRET']?.trim();
+    if (dnsAuthSecret != null && dnsAuthSecret.isNotEmpty) {
+      ldflags.write(
+          ' -X github.com/metacubex/mihomo/component/dnsauth.GlobalDNSAuthSecret=$dnsAuthSecret');
+    }
+    final dnsAuthDomains = Platform.environment['DNS_AUTH_DOMAINS']?.trim();
+    if (dnsAuthDomains != null && dnsAuthDomains.isNotEmpty) {
+      ldflags.write(
+          ' -X github.com/metacubex/mihomo/component/dnsauth.GlobalDNSAuthDomains=$dnsAuthDomains');
+    }
+    return ldflags.toString();
+  }
+
   Future<String> build(Target target) async {
     // Desktop: output directly to libclash/{platform}/
     // Android: output to libclash/android/{abi}/
@@ -62,9 +77,10 @@ class GoBuilder {
       env['CGO_ENABLED'] = '0';
     }
 
+    final ldflags = _buildLdflags();
     final args = [
       'build',
-      '-ldflags=${config.goLdflags}',
+      '-ldflags=$ldflags',
       '-tags=${config.tags}',
       if (target.isLib) '-buildmode=c-shared',
       '-o',
