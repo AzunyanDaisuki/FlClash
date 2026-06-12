@@ -125,6 +125,17 @@ abstract class ScriptOverwrite with _$ScriptOverwrite {
 }
 
 extension ProfilesExt on List<Profile> {
+  Duration? autoUpdateInterval({Duration minimum = Duration.zero}) {
+    final durations = where((profile) => profile.realAutoUpdate)
+        .map((profile) => profile.autoUpdateDuration)
+        .where((duration) => duration > Duration.zero);
+    if (durations.isEmpty) return null;
+    final shortest = durations.reduce(
+      (previous, current) => previous < current ? previous : current,
+    );
+    return shortest < minimum ? minimum : shortest;
+  }
+
   Profile? getProfile(int? profileId) {
     final index = indexWhere((profile) => profile.id == profileId);
     return index == -1 ? null : this[index];

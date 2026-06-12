@@ -13,6 +13,7 @@ kotlin = "2.2.10"
 smaliDexlib2 = "3.0.9"
 firebaseCrashlyticsKtx = "20.0.1"
 firebaseCommonKtx = "22.0.0"
+workRuntimeKtx = "2.10.5"
 
 [libraries]
 build-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -26,3 +27,4 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }
 firebase-crashlytics-ktx = { group = "com.google.firebase", name = "firebase-crashlytics-ktx", version.ref = "firebaseCrashlyticsKtx" }
 firebase-common-ktx = { group = "com.google.firebase", name = "firebase-common-ktx", version.ref = "firebaseCommonKtx" }
+work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }

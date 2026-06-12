@@ -20,6 +20,7 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
 import com.follow.clash.R
+import com.follow.clash.ProfileAutoUpdateWorker
 import com.follow.clash.common.Components
 import com.follow.clash.common.GlobalState
 import com.follow.clash.common.QuickAction
@@ -170,6 +171,12 @@ class AppPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, ActivityAware 
 
             "openAppSettings" -> {
                 result.success(openAppSettings())
+            }
+
+            "syncProfileAutoUpdateBackground" -> {
+                val intervalMillis = call.argument<Number>("intervalMillis")?.toLong()
+                ProfileAutoUpdateWorker.sync(GlobalState.application, intervalMillis)
+                result.success(true)
             }
 
             else -> {

@@ -7,6 +7,7 @@ import 'package:fl_clash/core/core.dart';
 import 'package:fl_clash/l10n/l10n.dart';
 import 'package:fl_clash/manager/hotkey_manager.dart';
 import 'package:fl_clash/manager/manager.dart';
+import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/plugins/app.dart';
 import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
@@ -46,13 +47,16 @@ class ApplicationState extends ConsumerState<Application> {
   @override
   void initState() {
     super.initState();
+    ref.listenManual(profilesProvider, (_, next) {
+      _syncAutoUpdateProfilesTask(next);
+    });
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       if (globalState.navigatorKey.currentContext != null) {
         await globalState.attach();
       } else {
         exit(0);
       }
-      _autoUpdateProfilesTask();
+      _syncAutoUpdateProfilesTask(ref.read(profilesProvider));
       _initLink();
       app?.initShortcuts();
     });
@@ -82,11 +86,21 @@ class ApplicationState extends ConsumerState<Application> {
     });
   }
 
-  void _autoUpdateProfilesTask() {
-    _autoUpdateProfilesTaskTimer = Timer(const Duration(minutes: 20), () async {
-      await ref.read(profilesActionProvider.notifier).autoUpdateProfiles();
-      _autoUpdateProfilesTask();
-    });
+  void _syncAutoUpdateProfilesTask(List<Profile> profiles) {
+    _autoUpdateProfilesTaskTimer?.cancel();
+    _autoUpdateProfilesTaskTimer = null;
+    final interval = profiles.autoUpdateInterval();
+    if (system.isAndroid) {
+      unawaited(app?.syncProfileAutoUpdateBackground(interval));
+      return;
+    }
+    if (interval == null) return;
+    _autoUpdateProfilesTaskTimer = Timer.periodic(
+      interval,
+      (_) => unawaited(
+        ref.read(profilesActionProvider.notifier).autoUpdateProfiles(),
+      ),
+    );
   }
 
   Widget _buildPlatformState({required Widget child}) {

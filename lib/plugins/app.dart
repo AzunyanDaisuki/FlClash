@@ -92,6 +92,13 @@ class App {
     });
   }
 
+  Future<bool?> syncProfileAutoUpdateBackground(Duration? interval) async {
+    if (!Platform.isAndroid) return true;
+    return methodChannel.invokeMethod<bool>('syncProfileAutoUpdateBackground', {
+      'intervalMillis': interval?.inMilliseconds,
+    });
+  }
+
   Future<bool?> isBatteryOptimizationDisabled() async {
     if (!Platform.isAndroid) return true;
     return methodChannel.invokeMethod<bool>('isBatteryOptimizationDisabled');
