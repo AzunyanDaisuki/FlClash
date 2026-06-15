@@ -208,10 +208,12 @@ enum HotAction { start, view, mode, proxy, tun }
 enum ProxiesIconStyle { none, standard, icon }
 
 enum FontFamily {
-  androidSamsungOneUiSans('sec'),
+  notoSansCjkSc('NotoSansCJKsc'),
   twEmoji('Twemoji'),
   jetBrainsMono('JetBrainsMono'),
   icon('Icons');
+
+  static const androidCjkFallback = ['NotoSansCJKsc'];
 
   final String value;
 

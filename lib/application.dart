@@ -26,12 +26,6 @@ class Application extends ConsumerStatefulWidget {
 }
 
 class ApplicationState extends ConsumerState<Application> {
-  static const _androidCjkLocale = Locale.fromSubtags(
-    languageCode: 'zh',
-    scriptCode: 'Hans',
-    countryCode: 'CN',
-  );
-
   Timer? _autoUpdateProfilesTaskTimer;
   bool _preHasVpn = false;
 
@@ -51,56 +45,14 @@ class ApplicationState extends ConsumerState<Application> {
     return ref.read(genColorSchemeProvider(brightness));
   }
 
-  TextStyle? _withAndroidSystemFont(TextStyle? style) {
-    if (!system.isAndroid || style == null) {
-      return style;
-    }
-    return style.copyWith(
-      fontFamily: FontFamily.androidSamsungOneUiSans.value,
-      locale: _androidCjkLocale,
-    );
-  }
-
-  TextTheme _withAndroidSystemFontTextTheme(TextTheme textTheme) {
-    if (!system.isAndroid) {
-      return textTheme;
-    }
-    return textTheme.copyWith(
-      displayLarge: _withAndroidSystemFont(textTheme.displayLarge),
-      displayMedium: _withAndroidSystemFont(textTheme.displayMedium),
-      displaySmall: _withAndroidSystemFont(textTheme.displaySmall),
-      headlineLarge: _withAndroidSystemFont(textTheme.headlineLarge),
-      headlineMedium: _withAndroidSystemFont(textTheme.headlineMedium),
-      headlineSmall: _withAndroidSystemFont(textTheme.headlineSmall),
-      titleLarge: _withAndroidSystemFont(textTheme.titleLarge),
-      titleMedium: _withAndroidSystemFont(textTheme.titleMedium),
-      titleSmall: _withAndroidSystemFont(textTheme.titleSmall),
-      bodyLarge: _withAndroidSystemFont(textTheme.bodyLarge),
-      bodyMedium: _withAndroidSystemFont(textTheme.bodyMedium),
-      bodySmall: _withAndroidSystemFont(textTheme.bodySmall),
-      labelLarge: _withAndroidSystemFont(textTheme.labelLarge),
-      labelMedium: _withAndroidSystemFont(textTheme.labelMedium),
-      labelSmall: _withAndroidSystemFont(textTheme.labelSmall),
-    );
-  }
-
   ThemeData _buildThemeData({required ColorScheme colorScheme}) {
-    final theme = ThemeData(
+    return ThemeData(
       useMaterial3: true,
-      fontFamily: system.isAndroid
-          ? FontFamily.androidSamsungOneUiSans.value
+      fontFamilyFallback: system.isAndroid
+          ? FontFamily.androidCjkFallback
           : null,
       pageTransitionsTheme: _pageTransitionsTheme,
       colorScheme: colorScheme,
-    );
-    if (!system.isAndroid) {
-      return theme;
-    }
-    return theme.copyWith(
-      textTheme: _withAndroidSystemFontTextTheme(theme.textTheme),
-      primaryTextTheme: _withAndroidSystemFontTextTheme(
-        theme.primaryTextTheme,
-      ),
     );
   }
 
