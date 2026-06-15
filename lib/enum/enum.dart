@@ -208,7 +208,7 @@ enum HotAction { start, view, mode, proxy, tun }
 enum ProxiesIconStyle { none, standard, icon }
 
 enum FontFamily {
-  notoSansCjkSc('NotoSansCJKsc'),
+  androidSystemSansSerif('sans-serif'),
   twEmoji('Twemoji'),
   jetBrainsMono('JetBrainsMono'),
   icon('Icons');

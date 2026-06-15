@@ -178,7 +178,9 @@ class ApplicationState extends ConsumerState<Application> {
           themeMode: themeProps.themeMode,
           theme: ThemeData(
             useMaterial3: true,
-            fontFamily: FontFamily.notoSansCjkSc.value,
+            fontFamily: system.isAndroid
+                ? FontFamily.androidSystemSansSerif.value
+                : null,
             pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.light,
@@ -187,7 +189,9 @@ class ApplicationState extends ConsumerState<Application> {
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
-            fontFamily: FontFamily.notoSansCjkSc.value,
+            fontFamily: system.isAndroid
+                ? FontFamily.androidSystemSansSerif.value
+                : null,
             pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.dark,
