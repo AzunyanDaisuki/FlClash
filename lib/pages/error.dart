@@ -1,4 +1,5 @@
 import 'package:fl_clash/common/color.dart';
+import 'package:fl_clash/enum/enum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -78,6 +79,7 @@ class InitErrorScreen extends StatelessWidget {
                   stack.toString(),
                   style: const TextStyle(
                     fontFamily: 'monospace', // Makes code easier to read
+                    fontFamilyFallback: FontFamily.sansSerifCjkFallback,
                     fontSize: 12,
                   ),
                 ),

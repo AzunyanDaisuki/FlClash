@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/core/core.dart';
+import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/l10n/l10n.dart';
 import 'package:fl_clash/manager/hotkey_manager.dart';
 import 'package:fl_clash/manager/manager.dart';
@@ -177,6 +178,7 @@ class ApplicationState extends ConsumerState<Application> {
           themeMode: themeProps.themeMode,
           theme: ThemeData(
             useMaterial3: true,
+            fontFamilyFallback: FontFamily.sansSerifCjkFallback,
             pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.light,
@@ -185,6 +187,7 @@ class ApplicationState extends ConsumerState<Application> {
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
+            fontFamilyFallback: FontFamily.sansSerifCjkFallback,
             pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.dark,
