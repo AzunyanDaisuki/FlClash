@@ -178,7 +178,7 @@ class ApplicationState extends ConsumerState<Application> {
           themeMode: themeProps.themeMode,
           theme: ThemeData(
             useMaterial3: true,
-            fontFamilyFallback: FontFamily.sansSerifCjkFallback,
+            fontFamily: FontFamily.notoSansCjkSc.value,
             pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.light,
@@ -187,7 +187,7 @@ class ApplicationState extends ConsumerState<Application> {
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
-            fontFamilyFallback: FontFamily.sansSerifCjkFallback,
+            fontFamily: FontFamily.notoSansCjkSc.value,
             pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.dark,

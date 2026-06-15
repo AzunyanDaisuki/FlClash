@@ -208,39 +208,10 @@ enum HotAction { start, view, mode, proxy, tun }
 enum ProxiesIconStyle { none, standard, icon }
 
 enum FontFamily {
+  notoSansCjkSc('NotoSansCJKsc'),
   twEmoji('Twemoji'),
   jetBrainsMono('JetBrainsMono'),
   icon('Icons');
-
-  static const sansSerifCjkFallback = [
-    'Microsoft YaHei UI',
-    'Microsoft YaHei',
-    'Microsoft JhengHei UI',
-    'Microsoft JhengHei',
-    'Yu Gothic UI',
-    'Yu Gothic',
-    'Meiryo',
-    'Malgun Gothic',
-    '.PingFang SC',
-    'PingFang SC',
-    'PingFang TC',
-    'Hiragino Sans',
-    'Hiragino Sans GB',
-    'Apple SD Gothic Neo',
-    'Noto Sans CJK SC',
-    'Noto Sans CJK TC',
-    'Noto Sans CJK JP',
-    'Noto Sans CJK KR',
-    'Noto Sans SC',
-    'Noto Sans TC',
-    'Noto Sans JP',
-    'Noto Sans KR',
-    'Source Han Sans SC',
-    'Source Han Sans TC',
-    'WenQuanYi Micro Hei',
-    'Droid Sans Fallback',
-    'sans-serif',
-  ];
 
   final String value;
 

@@ -13,7 +13,6 @@ extension TextStyleExtension on TextStyle {
 
   TextStyle get toJetBrainsMono => copyWith(
         fontFamily: FontFamily.jetBrainsMono.value,
-        fontFamilyFallback: FontFamily.sansSerifCjkFallback,
       );
 
   TextStyle adjustSize(int size) => copyWith(
