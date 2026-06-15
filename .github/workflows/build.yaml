@@ -197,6 +197,57 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  release:
+    permissions:
+      actions: read
+      contents: write
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist/
+          pattern: artifact-*
+          merge-multiple: true
+
+      - name: Generate release notes
+        run: |
+          cd ./dist
+          sha256sum * > SHA256SUMS
+          cd ..
+
+          tag="${GITHUB_REF_NAME}"
+          subject="$(git log -1 --pretty=%s)"
+          cat > release.md <<EOF
+          OIX modified FlClash build.
+
+          Build run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          Commit: ${GITHUB_SHA}
+
+          Included targets:
+          - Android ARM64-v8a
+          - Windows x64 installer
+          - Windows x64 portable zip
+
+          Changes:
+          - ${subject}
+          EOF
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ contains(github.ref_name, '-') && 'false' || 'true' }}
+          files: ./dist/*
+          body_path: ./release.md
+
   upload:
     if: false
     permissions: write-all
