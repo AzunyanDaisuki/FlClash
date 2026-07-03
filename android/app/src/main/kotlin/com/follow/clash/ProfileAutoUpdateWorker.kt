@@ -248,21 +248,24 @@ class ProfileAutoUpdateWorker(
         private const val CORE_ACTION_TIMEOUT_MILLIS = 60_000L
 
         fun sync(context: Context, intervalMillis: Long?) {
-            val workManager = WorkManager.getInstance(context)
-            val resolvedIntervalMillis = intervalMillis ?: readAutoUpdateIntervalMillis(context)
-            if (resolvedIntervalMillis == null || resolvedIntervalMillis <= 0) {
-                workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
-                return
+            runCatching {
+                val workManager = WorkManager.getInstance(context)
+                if (intervalMillis == null || intervalMillis <= 0) {
+                    workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
+                    return@runCatching
+                }
+                val delayMillis = nextFixedIntervalDelayMillis(
+                    intervalMillis = intervalMillis,
+                    includeCurrentBoundary = true,
+                )
+                enqueue(context, delayMillis, ExistingWorkPolicy.REPLACE)
+            }.onFailure {
+                GlobalState.log("Profile auto update sync failed: ${it.message}")
             }
-            val delayMillis = nextFixedIntervalDelayMillis(
-                intervalMillis = resolvedIntervalMillis,
-                includeCurrentBoundary = true,
-            )
-            enqueue(context, delayMillis, ExistingWorkPolicy.REPLACE)
         }
 
         private fun enqueueNext(context: Context, intervalMillis: Long?) {
-            val shortestIntervalMillis = readAutoUpdateIntervalMillis(context) ?: intervalMillis
+            val shortestIntervalMillis = intervalMillis ?: readAutoUpdateIntervalMillis(context)
             if (shortestIntervalMillis == null || shortestIntervalMillis <= 0) return
             val delayMillis = nextFixedIntervalDelayMillis(
                 intervalMillis = shortestIntervalMillis,
@@ -295,28 +298,32 @@ class ProfileAutoUpdateWorker(
         private fun readAutoUpdateIntervalMillis(context: Context): Long? {
             val databaseFile = databaseFile(context)
             if (!databaseFile.exists()) return null
-            return SQLiteDatabase.openDatabase(
-                databaseFile.path,
-                null,
-                SQLiteDatabase.OPEN_READONLY,
-            ).use { database ->
-                database.rawQuery(
-                    """
-                    SELECT MIN(auto_update_duration_millis)
-                    FROM profiles
-                    WHERE auto_update = 1
-                      AND url != ''
-                      AND auto_update_duration_millis > 0
-                    """.trimIndent(),
+            return runCatching {
+                SQLiteDatabase.openDatabase(
+                    databaseFile.path,
                     null,
-                ).use { cursor ->
-                    if (cursor.moveToFirst() && !cursor.isNull(0)) {
-                        cursor.getLong(0)
-                    } else {
-                        null
+                    SQLiteDatabase.OPEN_READONLY,
+                ).use { database ->
+                    database.rawQuery(
+                        """
+                        SELECT MIN(auto_update_duration_millis)
+                        FROM profiles
+                        WHERE auto_update = 1
+                          AND url != ''
+                          AND auto_update_duration_millis > 0
+                        """.trimIndent(),
+                        null,
+                    ).use { cursor ->
+                        if (cursor.moveToFirst() && !cursor.isNull(0)) {
+                            cursor.getLong(0)
+                        } else {
+                            null
+                        }
                     }
                 }
-            }
+            }.onFailure {
+                GlobalState.log("Profile auto update interval read failed: ${it.message}")
+            }.getOrNull()
         }
 
         private fun databaseFile(context: Context): File {

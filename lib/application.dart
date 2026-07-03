@@ -91,7 +91,9 @@ class ApplicationState extends ConsumerState<Application> {
     _autoUpdateProfilesTaskTimer = null;
     final interval = profiles.autoUpdateInterval();
     if (system.isAndroid) {
-      unawaited(app?.syncProfileAutoUpdateBackground(interval));
+      unawaited(
+        app?.syncProfileAutoUpdateBackground(interval).catchError((_) => false),
+      );
       return;
     }
     if (interval == null) return;
