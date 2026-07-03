@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/core/core.dart';
-import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/l10n/l10n.dart';
 import 'package:fl_clash/manager/hotkey_manager.dart';
 import 'package:fl_clash/manager/manager.dart';
@@ -43,17 +42,6 @@ class ApplicationState extends ConsumerState<Application> {
     int? primaryColor,
   }) {
     return ref.read(genColorSchemeProvider(brightness));
-  }
-
-  ThemeData _buildThemeData({required ColorScheme colorScheme}) {
-    return ThemeData(
-      useMaterial3: true,
-      fontFamilyFallback: system.isAndroid
-          ? FontFamily.androidCjkFallback
-          : null,
-      pageTransitionsTheme: _pageTransitionsTheme,
-      colorScheme: colorScheme,
-    );
   }
 
   @override
@@ -187,13 +175,17 @@ class ApplicationState extends ConsumerState<Application> {
           locale: utils.getLocaleForString(locale),
           supportedLocales: AppLocalizations.delegate.supportedLocales,
           themeMode: themeProps.themeMode,
-          theme: _buildThemeData(
+          theme: ThemeData(
+            useMaterial3: true,
+            pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.light,
               primaryColor: themeProps.primaryColor,
             ),
           ),
-          darkTheme: _buildThemeData(
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            pageTransitionsTheme: _pageTransitionsTheme,
             colorScheme: _getAppColorScheme(
               brightness: Brightness.dark,
               primaryColor: themeProps.primaryColor,

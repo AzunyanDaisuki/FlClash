@@ -109,9 +109,6 @@ flutter:
     - assets/images/empty/
     - assets/images/icon/
   fonts:
-    - family: NotoSansCJKsc
-      fonts:
-        - asset: assets/fonts/NotoSansCJKsc-Regular.otf
     - family: JetBrainsMono
       fonts:
         - asset: assets/fonts/JetBrainsMono-Regular.ttf
