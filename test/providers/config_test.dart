@@ -1,3 +1,4 @@
+import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/config.dart';
@@ -131,6 +132,25 @@ void main() {
     test('can toggle on', () {
       container.read(overrideDnsProvider.notifier).update((_) => true);
       expect(container.read(overrideDnsProvider), true);
+    });
+  });
+
+  group('ExcludeSSIDs provider', () {
+    test('reorders with final insertion index semantics', () {
+      container
+          .read(excludeSSIDsProvider.notifier)
+          .update((_) => ['Home', 'Office', 'Cafe', 'Hotel']);
+
+      container.read(excludeSSIDsProvider.notifier).update((value) {
+        return value.copyAndReorder(1, 3);
+      });
+
+      expect(container.read(excludeSSIDsProvider), [
+        'Home',
+        'Cafe',
+        'Hotel',
+        'Office',
+      ]);
     });
   });
 
