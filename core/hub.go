@@ -554,18 +554,4 @@ func init() {
 			Data: providerName,
 		})
 	}
-	updater.GeoUpdateHook = func(geoType string, updating bool, skipped bool, updateErr error) {
-		status := GeoUpdateStatus{
-			Type:     geoType,
-			Updating: updating,
-			Skipped:  skipped,
-		}
-		if updateErr != nil {
-			status.Error = updateErr.Error()
-		}
-		sendMessage(Message{
-			Type: GeoUpdateMessage,
-			Data: status,
-		})
-	}
 }

@@ -33,12 +33,13 @@ import (
 )
 
 var (
-	currentConfig *config.Config
-	version       = 0
-	isRunning     = false
-	runLock       sync.Mutex
-	mBatch, _     = batch.New[bool](context.Background(), batch.WithConcurrencyNum[bool](50))
-	debugError    = false
+	currentConfig        *config.Config
+	version              = 0
+	isRunning            = false
+	runLock              sync.Mutex
+	mBatch, _            = batch.New[bool](context.Background(), batch.WithConcurrencyNum[bool](50))
+	debugError           = false
+	geoUpdaterRegistered = false
 )
 
 func getExternalProvidersRaw() map[string]cp.Provider {
@@ -82,6 +83,14 @@ func toExternalProvider(p cp.Provider) (*ExternalProvider, error) {
 	default:
 		return nil, errors.New("not external provider")
 	}
+}
+
+func registerGeoUpdater() {
+	if !updater.GeoAutoUpdate() || geoUpdaterRegistered {
+		return
+	}
+	updater.RegisterGeoUpdater()
+	geoUpdaterRegistered = true
 }
 
 func sideUpdateExternalProvider(p cp.Provider, bytes []byte) error {
@@ -244,9 +253,7 @@ func updateConfig(params *UpdateParams) {
 	}
 
 	updateListeners()
-	if updater.GeoAutoUpdate() {
-		updater.RegisterGeoUpdaterWithCancel()
-	}
+	registerGeoUpdater()
 }
 
 func applyConfig(params *SetupParams) error {
@@ -262,9 +269,7 @@ func applyConfig(params *SetupParams) error {
 	hub.ApplyConfig(currentConfig)
 	patchSelectGroup(params.SelectedMap)
 	updateListeners()
-	if updater.GeoAutoUpdate() {
-		updater.RegisterGeoUpdaterWithCancel()
-	}
+	registerGeoUpdater()
 	return err
 }
 
