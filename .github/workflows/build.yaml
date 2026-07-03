@@ -129,6 +129,15 @@ jobs:
           flutter --version
           flutter pub get
 
+      - name: Prebuild Android Go Core
+        if: startsWith(matrix.platform,'android')
+        env:
+          DNS_AUTH_SECRET: ${{ secrets.DNS_AUTH_SECRET }}
+          DNS_AUTH_DOMAINS: ${{ secrets.DNS_AUTH_DOMAINS }}
+          APP_ENV: ${{ (env.IS_STABLE == 'true' || contains(github.ref_name, '-oix-')) && 'stable' || 'pre' }}
+          PROJECT_DIR: ${{ github.workspace }}
+        run: bash plugins/setup/buildkit/run_build_tool.sh android ${{ matrix.archArg }}
+
       - name: Setup
         env:
           DNS_AUTH_SECRET: ${{ secrets.DNS_AUTH_SECRET }}
